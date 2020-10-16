@@ -1,0 +1,17 @@
+---
+- name: '{{ ansible_name_module }} | file | Create Directory Structure' 
+  file:
+    path: '{{ item }}'
+    state: directory
+    mode: '0777'
+  with_items:
+    - '{{ dir_deploy }}/nginx-images'
+
+- name: '{{ ansible_name_module }} | download RHCOS Images | Load into Nginx Service'
+  get_url:
+    dest: "{{ dir_deploy }}/nginx-images/{{ item }}"
+    url: "{{ rhcos_image_mirror }}/{{rhcos_image_version_major}}/{{rhcos_image_version_minor}}/{{ item }}"
+    validate_certs: false
+    force: yes
+  loop: "{{ rhcos_image_iso_names }}"
+

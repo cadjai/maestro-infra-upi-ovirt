@@ -1,0 +1,37 @@
+## Idm config variables
+domain: "example.com"
+dns_server_public: 1.1.1.1
+idm_hostname: idm #Short hostname
+idm_ssh_user: root
+idm_ssh_pwd: redhat
+idm_public_ip: "192.168.0.4"
+idm_realm: "{{ domain | upper }}"
+idm_dm_pwd: "Redhat1993"
+idm_admin_pwd: "Redhat1993"
+idm_forward_ip: "{{ dns_server_public }}"
+idm_reverse_zone: "168.192.in-addr.arpa."
+idm_users:
+   - username: operator
+     password: redhat1234
+     display_name: "Operator"
+     first_name: Oper
+     last_name: Ator
+     email: "operator@redhat.com"
+     phone: "+18887334281"
+     title: "Systems Administrator"
+idm_dns_records:
+   - hostname: router
+     record_type: A
+     ip_address: 192.168.0.1
+     reverse_zone: "{{ idm_reverse_zone }}"
+     reverse_record: 1.0
+   - hostname: switch
+     record_type: A
+     ip_address: 192.168.0.2
+     reverse_zone: "{{ idm_reverse_zone }}"
+     reverse_record: 2.0
+   - hostname: kvm
+     record_type: A
+     ip_address: 192.168.0.3
+     reverse_zone: "{{ idm_reverse_zone }}"
+     reverse_record: 3.0

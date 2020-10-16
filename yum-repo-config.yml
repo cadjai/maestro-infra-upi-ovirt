@@ -1,0 +1,12 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | yum-repo-config.yml' 
+  hosts: "{{ target | d('new*') }}" 
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "repository"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+  roles:
+    - configure-yum-repo 
+

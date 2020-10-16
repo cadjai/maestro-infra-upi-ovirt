@@ -1,0 +1,66 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: '{{ name_vendor }} | Koffer | dhcp.yml' 
+  hosts: newdhcp 
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "dhcp"
+    ansible_name_module: " Konductor | Build UPI Infra Resources | {{ module }}"
+  tasks:
+    - name: '{{ ansible_name_module }} | Install and configure LB'
+      block:
+        - name: '{{ ansible_name_module }} | Ensure DHCPD is installed' 
+          yum:
+            name: "dhcp"
+            state: latest
+          register: dhcp_pkgs_installed
+
+        - name: '{{ ansible_name_module }} | copy DHCP config template into place'
+          template:
+            src: "templates/dhcp/dhcpd.conf.j2"
+            dest: "/etc/dhcp/dhcpd.conf"
+          register: dhcpcfg_copied
+
+        - name: '{{ ansible_name_module }} | Ensure dhcpd is enabled'
+          systemd:
+            name: dhcpd
+            state: started
+            enabled: yes
+
+        - name: '{{ ansible_name_module }} | Ensure the firewall-cmd is installed'
+          yum:
+            name: "firewalld,python-firewall"
+          register: firewalld_pkgs_installed
+
+        - name: '{{ ansible_name_module }} | Ensure Firewalld is enabled'
+          systemd:
+            name: firewalld
+            state: started
+            enabled: yes
+
+        - name: '{{ ansible_name_module }} | Enable appropriates port on public zone'
+          firewalld:
+            port: "{{ item }}"
+            permanent: yes
+            zone: public
+            immediate: yes
+            state: yes
+          loop:
+            - 67/udp
+
+        - name: '{{ ansible_name_module }} | Enable appropriates port on internal zone'
+          firewalld:
+            port: "{{ item }}"
+            permanent: yes
+            zone: internal
+            immediate: yes
+            state: yes
+          loop:
+            - 67/udp
+
+        - name: '{{ ansible_name_module }} | Restart DHCPD service'
+          systemd:
+            name: dhcpd
+            state: restarted
+

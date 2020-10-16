@@ -1,0 +1,81 @@
+---
+# tasks file for ignition
+
+#- name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
+#  slurp:
+#    src: "{{ registra_ca_local_dir }}/{{ registry_ca_local_name }}"
+#  register: registry_ca_cert
+ 
+- name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
+  shell:
+    cmd: "cat {{ registra_ca_local_dir }}/{{ registry_ca_local_name }} | grep -v CERTIFICATE | tr -d '\n'"
+  register: registry_ca_cert
+ 
+- name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
+  shell:
+    cmd: "cat {{ ocp_registry_pull_secret_file }}"
+  register: ocp_registry_pull_secret 
+ 
+- name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: 0755
+  loop:
+    - "{{ dir_deploy }}/cluster"
+    - "{{ dir_deploy }}/configs"
+
+- name: '{{ ansible_name_module }} | shell:rm | Ensure the ignition directories are empty'
+  shell: rm -rf {{ item }}/*
+  loop:
+    - "{{ dir_deploy }}/cluster"
+    - "{{ dir_deploy }}/configs"
+    - "{{ dir_deploy }}/nginx"
+    - "{{ dir_deploy }}/secrets"
+  ignore_errors: true
+
+- name: '{{ ansible_name_module }} | template | Copy install-config.yml into place'
+  template:
+    src: install-config.yaml.j2 
+    dest: "{{ item }}/install-config.yaml"
+    force: yes 
+  loop:
+    - "{{ dir_deploy }}/cluster"
+    - "{{ dir_deploy }}/configs"
+
+- name: '{{ ansible_name_module }} | shell:openshift-install | Generate manifest config files'
+  shell: "{{ openshift_install_binary }} create manifests --dir={{ dir_deploy }}/cluster/"
+  register: manifests_created
+
+- name: '{{ ansible_name_module }} | replace  | Update required strings'
+  replace:
+    path: "{{ dir_deploy }}/cluster/manifests/{{ item.file }}"
+    regexp: "{{ item.regex }}"
+    replace: "{{ item.string }}"
+  loop:
+    - { regex: "mastersSchedulable: true", string: "mastersSchedulable: false", file: "cluster-scheduler-02-config.yml", replace: true}
+    - { regex: "channel:.*", string: "channel: {{ cluster_channel | d(none) }}", file: "cvo-overrides.yaml", replace: false}
+    - { regex: "upstream:.*", string: "upstream: {{ upstream_server | d(none) }}", file: "cvo-overrides.yaml", replace: false}
+  when:
+    - item.replace | bool
+
+- name: '{{ ansible_name_module }} | template | Copy updated cluster-network-03-config.yml into place'
+  template:
+    src: cluster-network-03-config.yml.j2 
+    dest: "{{ dir_deploy }}/cluster/manifests/cluster-network-03-config.yml"
+    force: yes 
+  when:
+    - update_cluster_network_config is defined 
+    - update_cluster_network_config | bool 
+
+- name: '{{ ansible_name_module }} | shell:openshift-install | Generate Ignition config files'
+  archive:
+    path: "{{ dir_deploy }}/cluster/manifests/"
+    dest: "{{ dir_deploy }}/configs/manifests-{{ ansible_date_time.date }}.tar.gz"
+    remove: no
+    format: gz
+
+- name: '{{ ansible_name_module }} | shell:openshift-install | Generate Ignition config files'
+  shell: "{{ openshift_install_binary }} create ignition-configs --dir={{ dir_deploy }}/cluster/"
+  register: ignition_created
+

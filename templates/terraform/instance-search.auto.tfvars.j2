@@ -1,0 +1,16 @@
+### Vm Data structure  ###
+{% for instance in groups['instances'] %}
+{% set outer_loop = loop %}
+{% if not instance in vm_skip_list %}
+{% if outer_loop.first %}
+ovirt_url = "{{ hostvars[instance]['ovirt_url'] }}"
+ovirt_username = "{{ hostvars[instance]['ovirt_username'] }}"
+ovirt_password = "{{ hostvars[instance]['ovirt_password'] }}"
+storage_domain_id = "{{ hostvars[instance]['storage_domain_id'] }}"
+cluster_id = "{{ hostvars[instance]['cluster_id'] }}"
+{% endif %}
+
+{{ instance }}_vm_name = "{{ hostvars[instance]['vm_name'] }}"
+{{ instance }}_vm_list_name = "{{ hostvars[instance]['vm_name'] }}_vms"
+{% endif %}
+{% endfor %}

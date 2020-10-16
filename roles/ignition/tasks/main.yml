@@ -1,0 +1,28 @@
+---
+# tasks file for ignition
+- name: '{{ ansible_name_module }} | ignition | import_tasks generate-ignition.yml'
+  import_tasks: generate-ignition.yml 
+
+##### Here we should be calling this from the Sparta Maestro infra ignition task  #####
+##### instead of copying the same code #######
+- name: '{{ ansible_name_module }} | copy | Move auth directory out of future nginx web root path'
+  copy:
+    src: "{{ dir_deploy }}/cluster/auth"
+    dest: "{{ dir_secrets }}/cluster"
+- file:
+    path: "{{ dir_deploy }}/cluster/auth"
+    state: absent
+
+#- name: '{{ ansible_name_module }} | copy | Copy kubeconfig'
+#  copy:
+#    src: "{{ dir_secrets }}/cluster/configs/auth/kubeconfig"
+#    dest: '{{ local_home }}/.kube/config'
+
+- name: '{{ ansible_name_module }} | include_tasks | nginx.yml'
+  include_tasks: nginx.yml
+
+- name: '{{ ansible_name_module }} | include_tasks | prepare-rhcos-images.yml'
+  include_tasks: prepare-rhcos-images.yml
+  when:
+    - host_rhcos_images is defined
+    - host_rhcos_images | bool

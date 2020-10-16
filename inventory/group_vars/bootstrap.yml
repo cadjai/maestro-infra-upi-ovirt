@@ -1,0 +1,5 @@
+vm_cpu_cores: 4
+vm_cpu_sockets: 4
+vm_memory: 16384
+ignition_file_suffix: "bootstrap.ign" 
+custom_script: "/tmp/custom-script.json"

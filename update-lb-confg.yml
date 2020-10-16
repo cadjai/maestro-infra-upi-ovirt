@@ -1,0 +1,24 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra  | update-lb-config.yml' 
+  hosts: newlb
+  become: true
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "update-loadbalancer-config"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+  tasks:
+    - name: '{{ ansible_name_module }} | copy LB config template into place'
+      template:
+        src: "templates/loadbalancer/haproxy.cfg.j2"
+        dest: "/etc/haproxy/haproxy.cfg"
+        force: yes
+        backup: yes
+      register: haproxycfg_copied
+
+    - name: '{{ ansible_name_module }} | Restart the HAProxy service'
+      systemd:
+        name: haproxy
+        state: restarted
+        daemon_reload: yes
+

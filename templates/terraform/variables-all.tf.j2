@@ -1,0 +1,44 @@
+variable "ovirt_url" { default =  "" }
+variable "ovirt_username" { default =  "" }
+variable "ovirt_password" { default =  "" }
+variable "storage_domain_id" { default =  "" }
+variable "cluster_id" { default =  "" }
+variable "vm_dns_servers" { default = "192.168.5.50" }
+variable "vm_dns_search" { default = "ocp.lab.kitindy.lab" }
+variable "vm_template_id" { default = ""}
+variable "disk_format" { default =  "cow" }
+variable "sparse" { default =  "true" }
+variable "shareable" { default =  "false" }
+variable "active" { default =  "true" }
+variable "bootable" { default =  "false" }
+variable "interface" { default =  "virtio_scsi" }
+variable "read_only" { default =  "false" }
+variable "use_scsi_reservation" { default =  "false" }
+variable "vm_memory" {
+  type = number
+  default =  "2048"
+}
+variable "vm_cpu_cores" {
+  type = number
+  default =  "2"
+}
+variable "vm_cpu_sockets" {
+  type = number
+  default =  "2"
+}
+variable "vm_resources" {
+  type = map(object({
+    vm_name         = string
+    vm_memory       = string
+    vm_template_id  = string
+    vm_cores        = number
+    vm_sockets      = number
+    vm_hostname     = string
+    vm_authorized_ssh_key = string
+    vm_custom_script = string
+    extra_disks     = map(object({
+      disk_name     = string
+      disk_size     = number
+    }))
+  }))
+}

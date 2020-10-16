@@ -1,0 +1,29 @@
+---
+# tasks file for setup-terraform-module
+
+####### Stage Terraform ovirt config for VM Search for each of the required UPI Infra nodes
+- name: '{{ ansible_name_module }} | file | Create directories | Node Search'
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ tf_module_path }}/{{ search_dir_suffix }}"
+
+- name: '{{ ansible_name_module }} | copy | Terraform Ovirt Modules Node Search'
+  copy:
+    src: "files/modules"
+    dest: "{{ tf_module_path }}/{{ search_dir_suffix }}"
+    mode: '755'
+
+- name: '{{ ansible_name_module }} | template | Terraform Ovirt Provider Node Search Vars '
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { mode: '755', name: "templates/terraform/provider.tf.j2", dest: "{{ tf_module_path }}/{{ search_dir_suffix }}/provider.tf"}
+    - { mode: '755', name: "templates/terraform/local.tfstate.j2", dest: "{{ tf_module_path }}/{{ search_dir_suffix }}/local.tfstate"}
+    - { mode: '755', name: "templates/terraform/variables-search.tf.j2", dest: "{{ tf_module_path }}/{{ search_dir_suffix }}/variables.tf"}
+    - { mode: '755', name: "templates/terraform/instance-search.auto.tfvars.j2", dest: "{{ tf_module_path }}/{{ search_dir_suffix }}/instance-all.auto.tfvars"}
+    - { mode: '755', name: "templates/terraform/instance-search.tf.j2", dest: "{{ tf_module_path }}/{{ search_dir_suffix }}/instance-all.tf"}
+

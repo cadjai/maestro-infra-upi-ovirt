@@ -1,0 +1,135 @@
+# Global settings
+#---------------------------------------------------------------------
+global
+    maxconn     20000
+    log         /dev/log local0 info
+    chroot      /var/lib/haproxy
+    pidfile     /var/run/haproxy.pid
+    user        haproxy
+    group       haproxy
+    daemon
+
+    # turn on stats unix socket
+    stats socket /var/lib/haproxy/stats
+    ssl-default-bind-ciphers PROFILE=SYSTEM
+    ssl-default-server-ciphers PROFILE=SYSTEM
+
+#---------------------------------------------------------------------
+# common defaults that all the 'listen' and 'backend' sections will
+# use if not designated in their block
+#---------------------------------------------------------------------
+defaults
+    mode                    http
+    log                     global
+    option                  httplog
+    option                  dontlognull
+    option http-server-close
+    option forwardfor       except 127.0.0.0/8
+    option                  redispatch
+    retries                 3
+    timeout http-request    10s
+    timeout queue           1m
+    timeout connect         10s
+    timeout client          300s
+    timeout server          300s
+    timeout http-keep-alive 10s
+    timeout check           10s
+    maxconn                 20000
+
+listen stats :9000
+mode http
+    stats enable
+    stats uri /
+
+### Kubernetes API Server Config
+
+frontend  kube-api-server
+    bind *:{{ kube_api_port }}
+    default_backend kube-api-server
+    mode tcp
+    option tcplog
+
+### Kubernetes Machine Config Server
+
+frontend  machine-config-server
+    bind *:{{ machine_config_server_port }}
+    default_backend machine-config-server
+    mode tcp
+    option tcplog
+
+### Kubernetes API Server Backend Config
+backend kube-api-server
+    balance source
+    mode tcp
+{% if groups['bootstrap'] | d([]) | length == 0 %}
+    server  bootstrap0 localhost:{{ kube_api_port }} check
+{% else %}
+{% for host in groups['bootstrap'] | d([]) %}
+    server      bootstrap{{ loop.index0 }} {{ host }}:{{ kube_api_port }} check
+{% endfor %}
+{% endif %}
+
+### For initial config Masters are not configured as backend 
+{% if groups['masters'] | d([]) | length > 0 %}
+{% for host in groups['masters'] %}
+    server      master{{ loop.index0 }} {{ host }}:{{ kube_api_port }} check
+{% endfor %}
+{% endif %}
+
+### Kubernetes Machine Config Server Backend Config
+backend machine-config-server
+    balance source
+    mode tcp
+{% if groups['bootstrap'] | d([]) | length == 0 %}
+    server  bootstrap0 localhost:{{ machine_config_server_port }} check
+{% else %}
+{% for host in groups['bootstrap'] | d([]) %}
+    server      bootstrap{{ loop.index0 }} {{ host }}:{{ machine_config_server_port }} check
+{% endfor %}
+{% endif %}
+
+### For initial config Masters are not configured as backend 
+{% if groups['masters'] | d([]) | length > 0 %}
+{% for host in groups['masters'] %}
+    server      master{{ loop.index0 }} {{ host }}:{{ machine_config_server_port }} check
+{% endfor %}
+{% endif %}
+
+
+### OpenShift Ingress Config
+frontend  ingress-apps-http
+    bind  *:80
+    mode tcp
+    option tcplog
+    default_backend ingress-apps-http
+
+frontend  ingress-apps-https
+    bind  *:443
+    mode tcp
+    option tcplog
+    default_backend ingress-apps-https
+
+### OpenShift Ingress Backend Config
+backend ingress-apps-http
+    balance source
+    mode tcp
+### For initial config set backend to localhost
+{% if groups['workers'] | d([]) | length == 0 %}
+    server router1 localhost:80 check
+{% else %}
+{% for node in groups['workers'] %}
+    server router{{ loop.index0 }} {{ node }}:80 check
+{% endfor %}
+{% endif %}
+
+backend ingress-apps-https
+    balance source
+    mode tcp
+### For initial config set backend to localhost
+{% if groups['workers'] | d([]) | length == 0 %}
+    server router1 localhost:443 check
+{% else %}
+{% for node in groups['workers'] %}
+    server router{{ loop.index0 }} {{ node }}:443 check
+{% endfor %}
+{% endif %}

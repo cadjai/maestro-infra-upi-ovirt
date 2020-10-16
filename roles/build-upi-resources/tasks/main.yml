@@ -1,0 +1,11 @@
+---
+# tasks file for build-upi-infra-resources
+- name: '{{ ansible_name_module }} | add_host | import_tasks build-vms-and-disks.yml'
+  import_tasks: build-vms-and-disks.yml
+
+- name: '{{ ansible_name_module }} | add_host | import_tasks search_vms.yml'
+  import_tasks: search_vms.yml 
+  when:
+    - search_vms is defined 
+    - search_vms | bool
+

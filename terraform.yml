@@ -1,0 +1,47 @@
+#!/usr/bin/ansible-playbook --inventory=inventory
+- name: "Konductor | Provision UPI Infra | terraform.yml"
+  hosts: local
+  vars_files:
+    - 'vars/global.yml'
+    - 'vars/git.yml'
+  vars:
+    module: "terraform"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+  tasks:
+
+    - name: '{{ ansible_name_module }} | shell:curl | Retrieve Terraform package version'
+      shell: >
+        curl -S "https://api.github.com/repos/hashicorp/terraform/releases/latest" \
+          | grep '"tag_name":' | cut -d ':' -f2 | tr -d '",v' | awk '{$1=$1};1'
+      register: terraform_ver
+      
+    - name: '{{ ansible_name_module }} | set_fact | Set Terraform Version Package'
+      set_fact:
+        ver_terraform_package: "{{ terraform_ver.stdout }}"
+      when:
+        - terraform_ver is defined
+        - terraform_ver.rc == 0 
+        - terraform_ver.stdout is defined
+
+    - name: '{{ ansible_name_module }} | unarchive | terraform'
+      become: yes
+      unarchive:
+        src: https://releases.hashicorp.com/terraform/{{ ver_terraform_package }}/terraform_{{ ver_terraform_package }}_linux_amd64.zip
+        dest: /usr/local/bin
+        remote_src: yes
+        validate_certs: false
+      when:
+        - ver_terraform_package is defined 
+        - not ver_terraform_package == ""
+      register: terraform_installed
+         
+    - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform modules'
+      shell:
+        cmd: terraform init
+        chdir: "{{ item.dest }}"
+      with_items:
+        - "{{ terraformrepos }}"
+      when:
+        - terraform_installed is defined
+        - terraform_installed.changed | bool
+      register: terraform_init

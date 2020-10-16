@@ -1,0 +1,45 @@
+---
+# tasks file for configure-yum-repo
+- name: '{{ ansible_name_module }} | Configure Yum Repo'
+  when:
+    - ( not use_satellite is defined or  (use_satellite is defined and not use_satellite | bool ))
+    - (yum_repo_file is defined and not yum_repo_file == "")
+  block:
+    - name: '{{ ansible_name_module }} | file:absent | repo file'
+      file:
+        path: "/etc/yum.repos.d/redhat.repo"
+        state: absent
+
+    - name: '{{ ansible_name_module }} | copy | repo file'
+      copy:
+        src: "{{ yum_repo_file }}"
+        dest: "/etc/yum.repos.d/{{ yum_repo_file | basename }}"
+        backup: yes
+      register: repo_file_copied
+
+    - name: '{{ ansible_name_module }} | update repositories'
+      yum:
+        name: '*'
+        state: latest
+      register: repo_updated
+ 
+    - name: '{{ ansible_name_module }} | reboot node'
+      reboot:
+      register: node_rebooted
+
+- name: '{{ ansible_name_module }} | Register client with Satellite Server'
+  when:
+    - use_satellite is defined
+    - use_satellite | bool
+    - satellite_server is defined
+    - not satellite_server == ""
+  block:
+    - name: '{{ ansible_name_module }} | Register client with Satellite | Role | RH Subscription' 
+      include_role: 
+        name: rh_subscription
+
+    - name: '{{ ansible_name_module }} | reboot node'
+      reboot:
+      register: node_rebooted
+      #delegate_to: inventory_host
+

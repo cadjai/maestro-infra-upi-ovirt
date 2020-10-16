@@ -1,0 +1,29 @@
+---
+# tasks file for setup-terraform-module
+
+####### Stage Terraform ovirt config for RHCOS Template if necessary 
+- name: '{{ ansible_name_module }} | file | Create directories | RHCOS Template'
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ tf_module_path }}"
+
+- name: '{{ ansible_name_module }} | copy | Terraform Ovirt Modules RHCOS Template'
+  copy:
+    src: "files/modules"
+    dest: "{{ tf_module_path }}"
+    mode: '755'
+
+- name: '{{ ansible_name_module }} | template | Terraform Ovirt Provider RHCOS Template Vars '
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { mode: '755', name: "templates/terraform/provider.tf.j2", dest: "{{ tf_module_path }}/provider.tf"}
+    - { mode: '755', name: "templates/terraform/local.tfstate.j2", dest: "{{ tf_module_path }}/local.tfstate"}
+    - { mode: '755', name: "templates/terraform/variables-template.tf.j2", dest: "{{ tf_module_path }}/variables.tf"}
+    - { mode: '755', name: "templates/terraform/rhcos-template.auto.tfvars.j2", dest: "{{ tf_module_path }}/rhcos-template.auto.tfvars"}
+    - { mode: '755', name: "templates/terraform/rhcos-template.tf.j2", dest: "{{ tf_module_path }}/rhcos-template.tf"}
+

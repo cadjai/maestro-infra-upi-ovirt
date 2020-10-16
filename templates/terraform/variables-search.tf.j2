@@ -1,0 +1,17 @@
+{% for instance in groups['instances'] %}
+{% set outer_loop = loop %}
+{% if not instance in vm_skip_list %}
+{% if outer_loop.first %}
+variable "ovirt_url" { default =  "" }
+variable "ovirt_username" { default =  "" }
+variable "ovirt_password" { default =  "" }
+variable "storage_domain_id" { default =  "" }
+variable "cluster_id" { default =  "" }
+{% endif %}
+variable "{{ instance }}_vm_name" { default =  "" }
+variable "{{ instance }}_vm_list_name" { 
+  type	      = any
+} 
+{% endif %}
+{% endfor %}
+

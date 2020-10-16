@@ -1,0 +1,18 @@
+---
+# tasks file for setup-terraform-module
+
+- name: '{{ ansible_name_module }} | setup-terraform-module | create-cluster-inventory.yml'
+  include_tasks: create-cluster-inventory.yml
+  when: 
+    - create_cluster_inventory is defined
+    - create_cluster_inventory | bool 
+
+- name: '{{ ansible_name_module }} | setup-terraform-module | include_tasks vms-and-disks.yml'
+  include_tasks: vms-and-disks.yml 
+
+- name: '{{ ansible_name_module }} | setup-terraform-module | include_tasks vm-search.yml'
+  include_tasks: vm-search.yml 
+  when: 
+    - search_vms is defined 
+    - search_vms | bool
+

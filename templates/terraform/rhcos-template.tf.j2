@@ -1,0 +1,10 @@
+
+module "rhcos_template" {
+  source		= "./modules/template"
+  cluster_id		= var.cluster_id
+  storage_domain_id     = var.storage_domain_id
+  create_template	= var.create_template
+  rhcos_image_url	= var.rhcos_image_url
+  rhcos_template_name	= var.rhcos_template_name
+  disk_format           = var.disk_format
+} 

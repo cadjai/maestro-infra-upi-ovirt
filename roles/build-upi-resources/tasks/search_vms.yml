@@ -1,0 +1,121 @@
+---
+# tasks file for build-upi-infra-resources
+### adding extra timeout here to wait for nodes to be created
+- name: '{{ ansible_name_module }} | command | wait for all vms to be created before running next tasks'
+  wait_for:
+    timeout: 150
+  delegate_to: localhost
+####### Terraform Init
+- name: '{{ ansible_name_module }} | shell | terraform init | VM Search'
+  shell: terraform init
+  args:
+    chdir: "{{ tf_module_path }}/{{ search_dir_suffix }}"
+  with_items:
+    - "{{ tf_module_path }}/{{ search_dir_suffix }}"
+
+####### Terraform Apply
+- name: '{{ ansible_name_module }} | command | terraform | apply | VM Search'
+  shell: terraform apply 
+  args:
+    chdir: "{{ tf_module_path }}/{{ search_dir_suffix }}"
+  with_items:
+    - "{{ tf_module_path }}/{{ search_dir_suffix }}"
+  register: tf_apply
+
+- name: These steps can only be performed if the previous is successful
+  when:
+    - tf_apply.results[0].rc is defined
+    - tf_apply.results[0].rc == 0
+  block:
+    - name: Print Terraform apply output
+      debug:
+        var: tf_apply
+    
+    - name: '{{ ansible_name_module }} | find | *-node-search '
+      find:
+        file_type: directory
+        patterns:
+          - "*{{ search_dir_suffix }}"
+        paths:
+          - "{{ tf_module_path }}"
+      register: instance_search
+    
+    - name: '{{ ansible_name_module }} | set_fact | node search paths'
+      set_fact:
+        instance_search_paths: "{{ instance_search.files | map(attribute='path') | list }}"
+    
+    - name: '{{ ansible_name_module }} | set_fact | Load terraform state files'
+      set_fact:
+        statefiles: "{{ lookup('file', item + '/terraform.tfstate') }}"
+      loop: "{{ instance_search_paths }}"
+      register: statefiles_set
+    
+    - name: Print Lookup output
+      debug:
+        var: statefiles_set
+    
+    - name: Set json file fact
+      set_fact:
+        instance_ips: "{{ statefiles_set | json_query(ipquery) }}"
+        instance_names: "{{ statefiles_set | json_query(namequery) }}"
+        instances: "{{ statefiles_set | json_query(query) }}"
+      vars:
+        ipquery: "results[*].ansible_facts.*.resources[][*].instances[][].attributes.* | [][].reported_devices[?name=='eth0'].ips[][?version=='v4'].address[]"
+        namequery: "results[*].ansible_facts.*.resources[][*].instances[][].attributes.* | [][].name"
+        query: "results[*].ansible_facts.*.resources[][*].instances[][].attributes.* | { name: [][].name, ipaddr: [][].reported_devices[?name=='eth0'].ips[][?version=='v4'].address[]}"
+      register: statejdata_out
+    
+    - name: Print statejdata output
+      debug:
+        var: statejdata_out
+    
+    - name: Set inventory format
+      set_fact:
+        new_instance_group: "{{ dict(instance_names | zip (instance_ips)) }}"
+    
+    - name: Print new instance group
+      debug:
+        var: new_instance_group
+
+    - name: '{{ ansible_name_module }} | add_host | create in memory host group to run subsequent plays'
+      add_host:
+        name: "{{ item.key }}"
+        groups:
+          - "{{ 'new' + (item.key.split('-')[1] | regex_replace('\\d','')) }}"
+          - "{{ instance_group }}"
+        ansible_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
+        ansible_ssh_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
+        ansible_sudo_pass: "{{ hostvars[item.key]['vm_rootpw'] | d(vm_rootpw) }}"
+        ansible_become_pass: "{{ hostvars[item.key]['vm_rootpw'] | d(vm_rootpw) }}"
+        ansible_ssh_pass: "{{ hostvars[item.key]['vm_rootpw'] | d(vm_rootpw) }}"
+        instance_name: "{{ item.key }}"
+        ansible_host: "{{ item.value }}"
+        ansible_connection: 'ssh'
+      loop: "{{ new_instance_group | dict2items }}"
+      when:
+        - new_instance_group is defined
+      register: hostadd_out
+    
+    - name: Print all groups
+      debug:
+        var: item
+      loop: "{{ groups.keys() }}"
+    
+    - name: Print all instances in all groups
+      debug:
+        var: item
+      loop: "{{ groups.all }}"
+    
+    - name: Print all instances in group {{ instance_group }} 
+      debug:
+        var: item
+      loop: "{{ groups[instance_group] }}"
+
+    - name:
+      template:
+        src: "templates/inventory/instances.j2"
+        dest: "{{ inventory_dir }}/{{ instance_inventory_file }}"
+        mode: '755'
+      when:
+        - new_instance_group is defined
+

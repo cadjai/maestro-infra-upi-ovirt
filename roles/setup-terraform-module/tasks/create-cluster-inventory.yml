@@ -1,0 +1,13 @@
+---
+# tasks file for setup-terraform-module
+
+####### Create static inventory file for the cluster
+- name: '{{ ansible_name_module }} | template | static inventory for cluster'
+  template:
+    src: "templates/inventory/cluster.j2"
+    dest: "{{ inventory_dir }}/{{ static_inventory_file }}"
+    force: yes 
+
+- name: '{{ ansible_name_module }} | meta | refresh inventory '
+  meta:
+    refresh_inventory

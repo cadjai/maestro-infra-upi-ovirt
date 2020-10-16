@@ -1,0 +1,43 @@
+apiVersion: v1
+baseDomain: {{ ocp_cluster_basedomain }}
+compute:
+- architecture: {{ ocp_node_arch | d('amd64') }}
+  hyperthreading: Enabled   
+  name: worker
+  platform: {}
+  replicas: 0 
+controlPlane:
+  architecture: {{ ocp_node_arch | d('amd64') }}
+  hyperthreading: Enabled   
+  name: master
+  platform: {} 
+  replicas: 3 
+metadata:
+  name: {{ ocp_cluster_name }}
+networking:
+  clusterNetwork:
+  - cidr: 10.128.0.0/14 
+    hostPrefix: 23
+  machineNetwork:
+  - cidr: {{ ocp_hosts_cidr | d('10.0.0.0/16') }} 
+  networkType: OpenShiftSDN
+  serviceNetwork: 
+  - {{ service_network_cidr | d('172.30.0.0/16') }}
+platform:
+  none: {}
+fips: false
+publish: External
+pullSecret: '{{ ocp_registry_pull_secret.stdout }}'
+sshKey: '{{ sshkeys_pub_string | d(sshkeys_pub_string_fact) }}'
+additionalTrustBundle: |
+  -----BEGIN CERTIFICATE-----
+  {{ registry_ca_cert.stdout | indent(width=2, indentfirst=True) }}
+  -----END CERTIFICATE-----
+imageContentSources:
+- mirrors:
+  - {{ registry_host_fqdn }}:{{ registry_host_port | d(5000)}}/{{ local_repository | d('openshift4') }}
+  source: quay.io/{{ product_repo | d('openshift-release-dev') }}/ocp-release
+- mirrors:
+  - {{ registry_host_fqdn }}:{{ registry_host_port | d(5000)}}/{{ local_repository | d('openshift4') }}
+  source: quay.io/{{ product_repo | d('openshift-release-dev') }}/ocp-v4.0-art-dev
+

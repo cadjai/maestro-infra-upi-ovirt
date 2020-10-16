@@ -1,0 +1,60 @@
+
+{% for instance in groups['instances'] %}
+{% set outer_loop = loop %}
+{% if not instance in vm_skip_list %}
+{% if outer_loop.first %}
+ovirt_url = "{{ hostvars[instance]['ovirt_url'] }}"
+ovirt_username = "{{ hostvars[instance]['ovirt_username'] }}"
+ovirt_password = "{{ hostvars[instance]['ovirt_password'] }}"
+storage_domain_id = "{{ hostvars[instance]['storage_domain_id'] }}"
+cluster_id = "{{ hostvars[instance]['cluster_id'] }}"
+vm_dns_search = "{{ hostvars[instance]['vm_dns_search'] }}"
+vm_dns_servers = "{{ hostvars[instance]['vm_dns_servers'] }}"
+vm_template_id = "{{ hostvars[instance]['vm_template_id'] }}"
+vm_resources = { 
+{% endif %}
+  {{ instance.split('.')[0] }} = {
+    vm_name = "{{ hostvars[instance]['vm_name'] }}"
+    vm_memory = "{{ hostvars[instance]['vm_memory'] }}"
+    vm_template_id = "{{ hostvars[instance]['vm_template_id'] }}"
+    vm_cores = {{ hostvars[instance]['vm_cpu_cores'] }}
+    vm_sockets = {{ hostvars[instance]['vm_cpu_sockets'] }}
+    vm_hostname = "{{ hostvars[instance]['vm_hostname'] }}"
+    vm_authorized_ssh_key ="{{ hostvars[instance]['vm_authorized_ssh_key'] }}"
+{% if hostvars[instance]['vm_custom_script'] is defined and not hostvars[instance]['vm_custom_script'] == 'omit' %}
+    vm_custom_script = <<-EOT
+    {{ lookup('file', hostvars[instance]['vm_custom_script']) }}
+EOT
+{% endif %}
+{% if hostvars[instance]['additional_disks'] | d([]) | length > 0 and hostvars[instance]['attach_additional_disks'] | d(false) | bool %}
+    extra_disks = { 
+{% for disk in hostvars[instance]['additional_disks'] %}
+{% set inner_loop = loop %}
+      {{ instance }}-{{ disk.name }} = {
+         disk_name = "{{ disk.name }}"
+         disk_size = {{ disk.size }}
+{% if not inner_loop.last %}
+      },
+{% else %}
+      }
+   } 
+{% endif %}
+{% endfor %}
+{% else %}
+    extra_disks = {}
+{% endif %}
+{% if outer_loop.last  %}
+  }
+}
+{% else %}
+{% if groups['instances'][outer_loop.index0 + 1] in vm_skip_list %}
+{% if (outer_loop.revindex0 == 1) %}
+  }
+}
+{% endif %}
+{% else %}
+  },
+{% endif %}
+{% endif %}
+{% endif %}
+{% endfor %}

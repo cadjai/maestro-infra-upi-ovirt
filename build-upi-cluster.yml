@@ -1,0 +1,20 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision-upi-infra | Build Cluster Resources'
+  hosts: local
+  vars:
+    module: "ovirt"
+    instance_type: "cluster-resources"
+    state_provider: "local"
+    tf_module_path: "{{ dir_terraform }}/{{ module }}/{{ instance_type }}"
+    ansible_name_module: " Konductor | Provision UPI Cluster Nodes | {{ module }} | {{ instance_type }}"
+    instance_group: "cluster"
+    instance_dir_suffix: "-node-search"
+    search_dir_suffix: "node-search"
+    instance_file_suffix: "-search"
+    instance_inventory_file: "cluster"
+    instance_role_groups: "{{ ['bootstrap','masters','workers'] }}"
+  vars_files:
+    - vars/global.yml
+
+  roles:
+    - { role: build-upi-resources }

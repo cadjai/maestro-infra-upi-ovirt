@@ -1,0 +1,79 @@
+---
+# tasks file for setup-terraform-module
+
+####### Stage Ingintion config custom scripts for host groups if applicable
+- name: '{{ ansible_name_module }} | template | ignition file '
+  vars:
+    host: "{{ item }}"
+    #hgroup: "{{ item }}"
+  template:
+    src: "templates/rhcos/ignition.config.j2"
+    dest: "{{ (hostvars[item].custom_script | dirname) + '/' + item + '-' + (hostvars[item].custom_script | basename) }}"
+    force: yes 
+  loop: "{{ groups.all }}"
+  when:
+    - not hostvars[item].group_names[0] in vm_skip_list
+    - hostvars[item].group_names[0] in instance_role_groups
+    - hostvars[item]['custom_script'] is defined
+
+- name: '{{ ansible_name_module }} | add_host | instance list'
+  add_host:
+    groups: 
+      - "{{ instance_group }}"
+      - 'instances'
+    hostname: "{{ item }}"
+    vm_name: "{{ item }}"
+    vm_hostname: "{{ item }}.{{ hostvars[item].dns_search | d(dns_search) }}"
+    inventory_dir: "{{ hostvars[item].inventory_dir }}"
+    ovirt_url: "{{ ovirt_url }}"
+    ovirt_username: "{{ ovirt_username }}"
+    ovirt_password: "{{ ovirt_password }}"
+    vm_template_id: "{{ vm_template_id }}"
+    cluster_id: "{{ cluster_id }}"
+    storage_domain_id: "{{ storage_domain_id }}"
+    vm_memory: "{{ hostvars[item].vm_memory | d(vm_memory) }}"
+    vm_cpu_cores: "{{ hostvars[item].vm_cpu_cores | d(vm_cpu_cores) }}"
+    vm_cpu_sockets: "{{ hostvars[item].vm_cpu_sockets | d(vm_cpu_sockets) }}"
+    vm_dns_servers: "{{ dns_servers }}"
+    vm_dns_search: "{{ dns_search }}"
+    nic_boot_proto: "{{ nic_boot_proto }}"
+    base_domain: "{{ base_domain }}"
+    vm_host_subdomain: "{{ host_subdomain }}"
+    vm_rootpw: "{{ vm_rootpw }}"
+    vm_user: "{{ vm_user }}"
+    vm_authorized_ssh_key: "{{ hostvars[item].authorized_ssh_key | d(authorized_ssh_key) }}"
+    attach_additional_disks: "{{ hostvars[item].attach_additional_disks | d(false) }}"
+    additional_disks: "{{ hostvars[item].additional_disks | d([]) }}"
+    vm_custom_script: "{{ omit if not hostvars[item].custom_script is defined else (hostvars[item].custom_script | dirname) + '/' + item + '-' + (hostvars[item].custom_script | basename) }}"
+    ignition_url: "{{ hostvars[item].ignition_url | d(ignition_url) }}"
+  loop: "{{ groups.all }}"
+  when:
+    - hostvars[item].group_names[0] in instance_role_groups
+
+####### Stage Terraform ovirt config for each of the required UPI Infra nodes
+- name: '{{ ansible_name_module }} | file | Create directories'
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ tf_module_path }}"
+
+- name: '{{ ansible_name_module }} | copy | Terraform Ovirt Modules'
+  copy:
+    src: "files/modules"
+    dest: "{{ tf_module_path }}"
+    mode: '755'
+
+- name: '{{ ansible_name_module }} | template | Terraform Ovirt Provider Vars '
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { mode: '755', name: "templates/terraform/provider.tf.j2", dest: "{{ tf_module_path }}/provider.tf"}
+    - { mode: '755', name: "templates/terraform/local.tfstate.j2", dest: "{{ tf_module_path }}/local.tfstate"}
+    - { mode: '755', name: "templates/terraform/variables-all.tf.j2", dest: "{{ tf_module_path }}/variables.tf"}
+    - { mode: '755', name: "templates/terraform/instance-all.auto.tfvars.j2", dest: "{{ tf_module_path }}/instance-all.auto.tfvars"}
+    - { mode: '755', name: "templates/terraform/instance-all.tf.j2", dest: "{{ tf_module_path }}/instance-all.tf"}
+    - { mode: '755', name: "templates/terraform/instance-out-all.tf.j2", dest: "{{ tf_module_path }}/instance-out-all.tf"}
+

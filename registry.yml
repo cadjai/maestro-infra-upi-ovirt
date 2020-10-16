@@ -1,0 +1,20 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | registry.yml' 
+  hosts: newregistry
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "registry"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+  tasks:
+    - name: '{{ ansible_name_module }} | file | registry local directory'
+      file:
+        path: "{{ registra_ca_local_dir }}"
+        state: directory
+        mode: 0755
+    - name: '{{ ansible_name_module }} | import_role | registry'
+      import_role:
+        name: registry
+
+

@@ -1,0 +1,3 @@
+vm_memory: 4096 
+vm_cpu_cores: 2
+vm_cpu_sockets: 2

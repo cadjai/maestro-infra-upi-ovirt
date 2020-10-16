@@ -1,0 +1,14 @@
+### Vm Data structure  ###
+ovirt_url = "{{ hostvars[instance]['ovirt_url'] }}"
+ovirt_username = "{{ hostvars[instance]['ovirt_username'] }}"
+ovirt_password = "{{ hostvars[instance]['ovirt_password'] }}"
+storage_domain_id = "{{ hostvars[instance]['storage_domain_id'] }}"
+cluster_id = "{{ hostvars[instance]['cluster_id'] }}"
+vm_name = "{{ hostvars[instance]['vm_name'] }}"
+vm_hostname = "{{ hostvars[instance]['vm_hostname'] }}"
+vm_dns_search = "{{ hostvars[instance]['vm_dns_search'] }}"
+vm_dns_servers = "{{ hostvars[instance]['dns_servers'] }}"
+vm_memory = "{{ hostvars[instance]['vm_memory'] | int }}" 
+vm_cpu_cores = "{{ hostvars[instance]['vm_cpu_cores'] | int }}"
+vm_template_id = "{{ hostvars[instance]['vm_template_id'] }}"
+

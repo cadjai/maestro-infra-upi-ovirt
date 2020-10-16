@@ -1,0 +1,6 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Konductor | provision-infra.yml'
+  hosts: localhost
+
+- import_playbook: ignition.yml   # Generate and stage ignition config to be pushed to the host
+- import_playbook: publish-ignition.yml   # Publish ignition files to the web server host

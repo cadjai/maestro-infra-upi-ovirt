@@ -1,0 +1,14 @@
+
+module "upi_infra_vms" {
+  source		= "./modules/vms-and-disks"
+  cluster_id		= var.cluster_id
+  storage_domain_id     = var.storage_domain_id
+  vm_dns_search		= var.vm_dns_search
+  vm_dns_servers	= var.vm_dns_servers
+  vm_template_id	= var.vm_template_id
+  disk_format           = var.disk_format
+  vm_resources		= var.vm_resources
+  bootable		= var.bootable
+  interface		= var.interface
+  read_only		= var.read_only
+} 

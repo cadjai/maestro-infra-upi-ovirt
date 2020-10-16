@@ -1,0 +1,14 @@
+
+[bootstrap]
+{{ ocp_cluster_name }}-bootstrap ansible_connection=local ansible_user=core
+
+[masters]
+{% for m in range(ocp_master_count) %}
+{{ ocp_cluster_name }}-master{{ m }} ansible_connection=local ansible_user=core
+{% endfor %}
+
+[workers]
+{% for w in range(ocp_worker_count) %}
+{{ ocp_cluster_name }}-worker{{ w }} ansible_connection=local ansible_user=core
+{% endfor %}
+

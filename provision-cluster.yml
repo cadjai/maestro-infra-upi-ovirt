@@ -1,0 +1,11 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Konductor | provision-cluster.yml'
+  hosts: localhost
+
+- import_playbook: provision-rhcos-template.yml     # Provision UPI infra nodes
+  when:
+    - coreos_vm_template_id is not defined or coreos_vm_template_id == '' or (create_template is defined and create_template | bool)
+- import_playbook: setup-cluster-resources.yml   # Setup Terraform to provision UPI cluster resources
+- import_playbook: build-upi-cluster.yml   # Use terraform to provision cluster ressources
+- import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces
+  

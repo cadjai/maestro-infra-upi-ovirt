@@ -1,0 +1,6 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Konductor | site.yml'
+  hosts: localhost
+
+- import_playbook: provision-infra.yml     # Provision UPI infra nodes
+- import_playbook: provision-cluster.yml   # Provision provision UPI cluster nodes

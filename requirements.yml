@@ -1,0 +1,29 @@
+---
+roles:
+  #- src: https://github.com/rhtconsulting/ansible-role_haproxy.git
+  #  scm: git
+  #  name: loadbalancer
+  - src: https://github.com/geerlingguy/ansible-role-haproxy.git 
+    scm: git
+    name: loadbalancer
+  - src: https://github.com/RedHatGov/ansible-idm.git
+    scm: git
+    name: idm 
+  - src: https://github.com/freeipa/ansible-freeipa.git 
+    scm: git
+    name: ipaclient 
+  - src: https://github.com/jaredhocutt/ansible-freeipa-ipaclient.git
+    scm: git
+    name: jipaclient
+  - src: https://github.com/the-paulus/redhat-subscription.git 
+    scm: git
+    name: rh_subscription
+  - src: https://github.com/cadjai/install-and-configure-standalone-docker-registry.git 
+    scm: git
+    name: registry
+
+collections:
+  #- name: https://github.com/nginxinc/ansible-collection-nginx.git
+  - name: nginxinc.nginx_core 
+    type: git
+    #version: 0.1.1
