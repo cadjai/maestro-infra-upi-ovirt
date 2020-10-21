@@ -18,7 +18,7 @@ vm_memory: 2048
 vm_cpu_cores: 2
 vm_cpu_sockets: 2
 custom_script: "omit"
-ignition_url: "omit
+ignition_url: "omit"
 
 # Vm Instances to build
 authorized_ssh_key: "{{ sshkeys_pub_string }}"
