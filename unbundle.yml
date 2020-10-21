@@ -1,0 +1,194 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | unbundle.yml' 
+  hosts: "{{ registry_hosts | default(groups.newregistry) }}"
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "registry"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+    dir_bundle_location: "/data/created-bundles"
+  pre_tasks:
+    - name: '{{ ansible_name_module }} | yum | install required packages on registry '
+      yum:
+        name:
+          - tar 
+          - podman
+          - jq
+        state: present
+
+  tasks:
+    - name: '{{ ansible_name_module }} | file:directory | Ensure the images directory exist'
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755
+      loop:
+        - "/tmp/bundles"
+
+    - name: '{{ ansible_name_module }} | find bundle files to move to registry '
+      find:
+        file_type: file
+        paths:
+          - "{{ dir_bundle_location }}/"
+        patterns: 
+          - '*.tar'
+          - '*.sha256'
+      delegate_to: 'localhost'
+      register: bundle_files
+
+    - name: '{{ ansible_name_module }} | copy | koffer bundles files to registry '
+      copy:
+        src: "{{ item.path }}"
+        dest: "/tmp/bundles"
+        mode: 0777
+        force: yes
+      loop: "{{ bundle_files.files }}"
+      when:
+        - bundle_files is defined
+
+    - name: '{{ ansible_name_module }} | find | bundle files on registry '
+      find:
+        file_type: file
+        paths:
+          - "/tmp/bundles"
+        patterns: '*.tar'
+      register: bundle_image_files
+
+    - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for each artifact'
+      file:
+        state: directory
+        path: "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}" 
+        mode: 0755
+      loop: "{{ bundle_image_files.files }}"
+      when:
+        - bundle_image_files is defined
+
+    - name: '{{ ansible_name_module }} | Process openshift images bundle | bundle files to registry '
+      block: 
+        - name: '{{ ansible_name_module }} | find bundle files on registry '
+          find:
+            file_type: file
+            paths:
+              - "/tmp/bundles"
+            patterns: '*openshift*.tar'
+          register: bundle_image_files
+
+        - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for each artifact'
+          file:
+            state: directory
+            path: "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}" 
+            mode: 0755
+          loop: "{{ bundle_image_files.files }}"
+          when:
+            - bundle_image_files is defined
+          register: bundle_image_dirs
+
+        - name: '{{ ansible_name_module }} | unarchive | bundle files to registry '
+          unarchive:
+            src: "{{ item.path }}"
+            remote_src: yes
+            dest: "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}"
+            mode: 0755
+          loop: "{{ bundle_image_files.files }}"
+          when:
+            - bundle_image_files is defined
+
+        - name: '{{ ansible_name_module }} | find | *.xz file on registry '
+          find:
+            file_type: file
+            paths:
+              - "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}/"
+            patterns: '*.xz'
+          loop: "{{ bundle_image_files.files }}"
+          when:
+            - bundle_image_files is defined
+          register: xd_image_files
+
+        - name: '{{ ansible_name_module }} | set_fact | xz_image_file '
+          set_fact:
+            xz_image_file: "{{ xd_image_files.results[0].files[0] }}"
+          when:
+            - xd_image_files is defined
+            - xd_image_files.results is defined
+            - xd_image_files.results[0].files[0] is defined
+            - xd_image_files.results[0].matched is defined
+            - xd_image_files.results[0].matched > 0 
+          
+        - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for artifact'
+          file:
+            state: directory
+            path: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}" 
+            mode: 0755
+          when:
+            - xz_image_file is defined
+          register: xz_bundle_image_dirs
+
+        - name: '{{ ansible_name_module }} | unarchive | bundle files '
+          unarchive:
+            src: "{{ xz_image_file.path }}"
+            remote_src: yes
+            dest: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/"
+            mode: 0755
+          when:
+            - xz_image_file is defined
+          register: unbundle_out
+
+        - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
+          set_fact:
+            local_registry_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/deploy/mirror/docker/registry/v2"
+            local_registry_config_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/deploy/secrets/docker"
+          when:
+            - unbundle_out is defined
+            - not unbundle_out.failed | d(false) | bool
+
+        - name: '{{ ansible_name_module }} | copy | oc client binary to registry'
+          copy:
+            src: "{{ oc_client_binary }}"
+            dest: "/tmp/{{ oc_client_binary | basename }}"
+            force: yes
+          register: oc_client_copied
+
+        - name: '{{ ansible_name_module }} | command | install oc client binary to registry'
+          command: "tar zxvf /tmp/{{ oc_client_binary | basename }} -C /usr/bin"
+          become: yes
+          when:
+            - oc_client_copied is defined
+            - oc_client_copied.path is defined
+            - oc_client_binary | basename in oc_client_copied.path  
+
+        - name: '{{ ansible_name_module }} | command | generate authfile for registry'
+          command: > 
+            podman login -u {{ registry_admin_username }} -p {{ registry_admin_password }} \
+               --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
+               {{ registry_host_fqdn }}:{{ registry_host_port }}
+          register: authfile_created
+
+        - name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
+          shell: > 
+            jq -c --argjson \
+              var "$(jq .auths {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json)" \
+              '.auths += $var' {{ local_registry_config_dir }}/quay.json \ 
+              | jq '.' > {{ local_registry_config_dir }}/ocp-registry.json
+
+        - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
+          command: > 
+            oc adm release mirror {{ ocp_release_version }} --from-dir={{ local_registry_dir }} \
+               --registry-config={{ local_registry_config_dir }}/ocp-registry.json \
+               --to {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }} \
+               --apply-release-image-signature=false 
+          when:
+            - authfile_created is defined
+          register: registry_loaded
+
+        - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
+          file:
+            state: absent 
+            path: "{{ item }}"
+          with_items: 
+            - "{{ xz_bundle_image_dirs.path }}"
+            - "{{ bundle_image_dirs.results[0].path }}"
+          when:
+            - registry_loaded is defined
+            - registry_loaded.rc == 0
+     
