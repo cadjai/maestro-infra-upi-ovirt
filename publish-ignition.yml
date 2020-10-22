@@ -29,46 +29,45 @@
         - master.ign
         - worker.ign
 
-    - name: '{{ ansible_name_module }} | yum | install gzip on web server '
-      yum:
-        name: 
-          - gzip
-          - unzip
-        state: present
+    - name: '{{ ansible_name_module }} | Process RHCOS qcow2 images '
       when:
         - host_rhcos_images is defined
         - host_rhcos_images | bool 
+      block:
+        - name: '{{ ansible_name_module }} | yum | install gzip on web server '
+          yum:
+            name: 
+              - gzip
+              - unzip
+            state: present
 
-    - name: '{{ ansible_name_module }} | copy image files to web server '
-      copy:
-        src: "{{ dir_deploy }}/nginx-images/{{ item }}"
-        dest: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ item }}"
-        mode: 0777
-        force: yes
-      loop: "{{ rhcos_image_iso_names }}"
-      when:
-        - host_rhcos_images is defined
-        - host_rhcos_images | bool 
+        - name: '{{ ansible_name_module }} | copy image files to web server '
+          copy:
+            src: "{{ dir_deploy }}/nginx-images/{{ item }}"
+            dest: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ item }}"
+            mode: 0777
+            force: yes
+          loop: "{{ rhcos_image_iso_names }}"
 
-    - name: '{{ ansible_name_module }} | find qcow2.gz file on web server '
-      find:
-        file_type: file
-        paths:
-          - "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/"
-        patterns: '*.qcow2.gz'
-      register: qcow2_iso_files
+        - name: '{{ ansible_name_module }} | find qcow2.gz file on web server '
+          find:
+            file_type: file
+            paths:
+              - "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/"
+            patterns: '*.qcow2.gz'
+          register: qcow2_iso_files
 
-    - name: '{{ ansible_name_module }} | set_fact qcow2.gz file on web server '
-      set_fact:
-        qcow2_files: "{{ qcow2_iso_files.files | map(attribute='path') | list }}"
-      when:
-        - qcow2_iso_files is defined
-        - qcow2_iso_files.files is defined
+        - name: '{{ ansible_name_module }} | set_fact qcow2.gz file on web server '
+          set_fact:
+            qcow2_files: "{{ qcow2_iso_files.files | map(attribute='path') | list }}"
+          when:
+            - qcow2_iso_files is defined
+            - qcow2_iso_files.files is defined
 
-    - name: '{{ ansible_name_module }} | command:gzip | qcow2 files to web server '
-      command:
-        cmd: gzip -d {{ item }}
-        chdir: "{{ item | dirname }}"
-      loop: "{{ qcow2_files }}"
-      when:
-        - qcow2_files is defined
+        - name: '{{ ansible_name_module }} | command:gzip | qcow2 files to web server '
+          command:
+            cmd: gzip -d {{ item }}
+            chdir: "{{ item | dirname }}"
+          loop: "{{ qcow2_files }}"
+          when:
+            - qcow2_files is defined
