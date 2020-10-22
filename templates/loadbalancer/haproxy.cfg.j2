@@ -70,7 +70,7 @@ backend kube-api-server
 {% endif %}
 
 ### For initial config Masters are not configured as backend 
-{% if groups['masters'] | d([]) | length > 0 %}
+{% if groups['masters'] | d([]) | length > 0 and include_masters | d(false) | bool %}
 {% for host in groups['masters'] %}
     server      master{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ kube_api_port }} check
 {% endfor %}
@@ -89,7 +89,7 @@ backend machine-config-server
 {% endif %}
 
 ### For initial config Masters are not configured as backend 
-{% if groups['masters'] | d([]) | length > 0 %}
+{% if groups['masters'] | d([]) | length > 0 and include_masters | d(false) | bool %}
 {% for host in groups['masters'] %}
     server      master{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ machine_config_server_port }} check
 {% endfor %}
@@ -117,9 +117,11 @@ backend ingress-apps-http
 {% if groups['workers'] | d([]) | length == 0 %}
     server router1 localhost:80 check
 {% else %}
+{% if include_workers | d(false) | bool %}
 {% for node in groups['workers'] %}
     server router{{ loop.index0 }} {{ node }}.{{ base_domain }}:80 check
 {% endfor %}
+{% endif %}
 {% endif %}
 
 backend ingress-apps-https
@@ -129,7 +131,9 @@ backend ingress-apps-https
 {% if groups['workers'] | d([]) | length == 0 %}
     server router1 localhost:443 check
 {% else %}
+{% if include_workers | d(false) | bool %}
 {% for node in groups['workers'] %}
     server router{{ loop.index0 }} {{ node }}.{{ base_domain }}:443 check
 {% endfor %}
+{% endif %}
 {% endif %}
