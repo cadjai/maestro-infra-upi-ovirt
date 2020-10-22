@@ -5,15 +5,28 @@
 #  slurp:
 #    src: "{{ registra_ca_local_dir }}/{{ registry_ca_local_name }}"
 #  register: registry_ca_cert
- 
+- name: '{{ ansible_name_module }} | yum | install required packages '
+  become: yes
+  yum:
+    name:
+      - jq
+    state: present
+
 - name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
   shell:
     cmd: "cat {{ registra_ca_local_dir }}/{{ registry_ca_local_name }} | grep -v CERTIFICATE | tr -d '\n'"
   register: registry_ca_cert
  
+- name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
+  shell: >
+    jq -c --argjson \
+      var "$(jq .auths {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json)" \
+      '.auths += $var' {{ ocp_registry_pull_secret_file }} \
+      | jq '.' > {{ ocp_registry_pull_secret_file | dirname }}/ocp-combined-pullsecret.json
+
 - name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
   shell:
-    cmd: "cat {{ ocp_registry_pull_secret_file }}"
+    cmd: "cat {{ ocp_registry_pull_secret_file | dirname }}/ocp-combined-pullsecret.json"
   register: ocp_registry_pull_secret 
  
 - name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
