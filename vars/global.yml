@@ -19,6 +19,8 @@ vm_cpu_cores: 2
 vm_cpu_sockets: 2
 custom_script: "omit"
 ignition_url: "omit"
+metadata_json_file: ""
+metadata_json_data: "{{ lookup('file', metadata_json_file) }}"
 
 # Vm Instances to build
 authorized_ssh_key: "{{ sshkeys_pub_string }}"
