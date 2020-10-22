@@ -7,6 +7,8 @@
   vars:
     module: "update-loadbalancer-config"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
+    include_masters: false
+    include_workers: false
   tasks:
     - name: '{{ ansible_name_module }} | copy LB config template into place'
       template:
