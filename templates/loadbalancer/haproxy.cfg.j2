@@ -65,14 +65,14 @@ backend kube-api-server
     server  bootstrap0 localhost:{{ kube_api_port }} check
 {% else %}
 {% for host in groups['bootstrap'] | d([]) %}
-    server      bootstrap{{ loop.index0 }} {{ host }}:{{ kube_api_port }} check
+    server      bootstrap{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ kube_api_port }} check
 {% endfor %}
 {% endif %}
 
 ### For initial config Masters are not configured as backend 
 {% if groups['masters'] | d([]) | length > 0 %}
 {% for host in groups['masters'] %}
-    server      master{{ loop.index0 }} {{ host }}:{{ kube_api_port }} check
+    server      master{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ kube_api_port }} check
 {% endfor %}
 {% endif %}
 
@@ -84,14 +84,14 @@ backend machine-config-server
     server  bootstrap0 localhost:{{ machine_config_server_port }} check
 {% else %}
 {% for host in groups['bootstrap'] | d([]) %}
-    server      bootstrap{{ loop.index0 }} {{ host }}:{{ machine_config_server_port }} check
+    server      bootstrap{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ machine_config_server_port }} check
 {% endfor %}
 {% endif %}
 
 ### For initial config Masters are not configured as backend 
 {% if groups['masters'] | d([]) | length > 0 %}
 {% for host in groups['masters'] %}
-    server      master{{ loop.index0 }} {{ host }}:{{ machine_config_server_port }} check
+    server      master{{ loop.index0 }} {{ host }}.{{ base_domain }}:{{ machine_config_server_port }} check
 {% endfor %}
 {% endif %}
 
@@ -118,7 +118,7 @@ backend ingress-apps-http
     server router1 localhost:80 check
 {% else %}
 {% for node in groups['workers'] %}
-    server router{{ loop.index0 }} {{ node }}:80 check
+    server router{{ loop.index0 }} {{ node }}.{{ base_domain }}:80 check
 {% endfor %}
 {% endif %}
 
@@ -130,6 +130,6 @@ backend ingress-apps-https
     server router1 localhost:443 check
 {% else %}
 {% for node in groups['workers'] %}
-    server router{{ loop.index0 }} {{ node }}:443 check
+    server router{{ loop.index0 }} {{ node }}.{{ base_domain }}:443 check
 {% endfor %}
 {% endif %}
