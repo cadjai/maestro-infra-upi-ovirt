@@ -25,6 +25,8 @@ vm_resources = {
     vm_custom_script = <<-EOT
     {{ lookup('file', hostvars[instance]['vm_custom_script']) }}
 EOT
+{% else %}
+    vm_custom_script = ""
 {% endif %}
 {% if hostvars[instance]['additional_disks'] | d([]) | length > 0 and hostvars[instance]['attach_additional_disks'] | d(false) | bool %}
     extra_disks = { 
