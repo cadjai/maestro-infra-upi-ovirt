@@ -17,4 +17,4 @@
     - vars/global.yml
 
   roles:
-    - { role: build-upi-resources }
+    - { role: build-upi-resources, search_mac_addresses: 'true' }

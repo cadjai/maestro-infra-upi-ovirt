@@ -9,3 +9,9 @@
     - search_vms is defined 
     - search_vms | bool
 
+- name: '{{ ansible_name_module }} | add_host | import_tasks search_mac_addresses.yml'
+  import_tasks: search_mac_addresses.yml 
+  when:
+    - search_mac_addresses is defined 
+    - search_mac_addresses | bool
+

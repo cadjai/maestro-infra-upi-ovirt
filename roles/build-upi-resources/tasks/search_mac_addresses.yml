@@ -1,0 +1,58 @@
+---
+# tasks file for build-upi-infra-resources
+### Retrieve Mac address for provisioned VMs so they can be used to search for ip in dhcp
+### CoreOS is not reporting IP so this allows one to get all mac to search for ip in dhcp
+- name: Ovirt creds
+  ovirt_auth:
+    url: "{{ ovirt_url }}"
+    username: "{{ ovirt_username }}"
+    password: "{{ ovirt_password }}"
+  delegate_to: 127.0.0.1
+  run_once: true
+
+- name: Gather VM Facts
+  ovirt_vm_info:
+    case_sensitive: true
+    all_content: true
+    fetch_nested: true
+    pattern: "name ={{ metadata_json_data.infraID }}* and cluster ={{ cluster_name | d('Default') }}"
+    auth: "{{ ovirt_auth }}"
+  delegate_to: 127.0.0.1
+  register: vm_facts
+
+- name: Gather NIC Facts
+  ovirt_nic_info:
+    fetch_nested: true
+    name: "nic1"
+    vm: "{{ item.name }}"
+    auth: "{{ ovirt_auth }}"
+  delegate_to: 127.0.0.1
+  loop: "{{ vm_facts.ovirt_vms }}"
+  register: nic_facts
+
+- name: Set VM NIC Facts
+  set_fact:
+    vm_names: "{{ nic_facts | json_query(vmnamequery) }}"
+    vm_nics: "{{ nic_facts | json_query(vmnicquery) }}"
+    vm_mac_addresses: "{{ nic_facts | json_query(vmmacquery) }}"
+  vars:
+    vmnamequery: "results[*].item.name"
+    vmnicquery: "results[*].ovirt_nics[0]"
+    vmmacquery: "results[*].ovirt_nics[0].mac.address"
+  register: nicdata_out
+
+- name: Set VM NIC Facts
+  set_fact:
+    vm_mac_map: "{{ dict(vm_names | zip (vm_mac_addresses)) }}"
+
+- name: Print NIC Data Output Map
+  debug:
+    var: vm_mac_map
+
+- name: Revoke SSO token
+  ovirt_auth:
+    state: absent
+    ovirt_auth: "{{ ovirt_auth }}"
+  delegate_to: 127.0.0.1
+  run_once: true
+
