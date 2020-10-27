@@ -11,6 +11,11 @@ spec:
   defaultNetwork:
     type: OpenShiftSDN
     openshiftSDNConfig:
-      mode: {{ network_policy }}
+      mode: {{ network_policy | d('NetworkPolicy') }}
       mtu: {{desired_mtu | d('1350') }}
       vxlanPort: {{ vxlanPort | d('4789') }}
+  kubeProxyConfig:
+    iptablesSyncPeriod: {{ desired_iptables_sync | d('30s') }}
+    proxyArguments:
+      iptables-min-sync-period:
+      - 0s
