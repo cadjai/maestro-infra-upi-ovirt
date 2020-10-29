@@ -1,4 +1,10 @@
 ---
+- name: '{{ ansible_name_module }} | shell:rm | Ensure the images directories are empty'
+  shell: rm -rf {{ item }}/
+  loop:
+    - "{{ dir_deploy }}/nginx-images"
+  ignore_errors: true
+
 - name: '{{ ansible_name_module }} | file | Create Directory Structure' 
   file:
     path: '{{ item }}'

@@ -1,4 +1,4 @@
-#!/usr/local/bin/ansible-playbook --inventory=inventory
+#!/usr/local/bin/ansible-playbook --inventory=inventory/infra
 - name: ' Konductor | Provision UPI Infra | publish-ignition.yml' 
   hosts: "{{ nginx_hosts | default(groups.newregistry) }}"
   become: yes
@@ -10,13 +10,10 @@
     host_rhcos_images: false
   tasks:
     - name: '{{ ansible_name_module }} | file:absent | remove existing ignition files from web server '
-      file: 
-        path: "{{ nginx_root_directory }}/{{ ign_repos_name }}/{{ item }}"
-        state: absent
-      loop:
-        - bootstrap.ign
-        - master.ign
-        - worker.ign
+      shell: "rm -f {{ nginx_root_directory }}/{{ ign_repos_name }}/*"
+
+    - name: '{{ ansible_name_module }} | file:absent | list directory from web server '
+      command: "ls -la {{ nginx_root_directory }}/{{ ign_repos_name }}/"
 
     - name: '{{ ansible_name_module }} | copy ignition files to web server '
       copy:
@@ -41,10 +38,32 @@
               - unzip
             state: present
 
+        - name: '{{ ansible_name_module }} | file |  rhcos-isos '
+          file:
+            path: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}"
+            state: directory
+            mode: 755
+
+        - name: '{{ ansible_name_module }} | template |  nginx.conf '
+          template:
+            src: "templates/nginx/nginx.conf.j2"
+            dest: "{{ nginx_conf }}"
+            mode: '755'
+            backup: yes
+
+        - name: '{{ ansible_name_module }} | shell:systemctl list-unit-file | get nginx service name '
+          shell: "systemctl list-unit-files | grep rh-nginx116 | awk '{print $1}'"
+          register: nginx_service
+
+        - name: '{{ ansible_name_module }} | Ensure Nginx Service is restarted '
+          systemd:
+            name: "{{ nginx_service.stdout }}"
+            state: restarted
+
         - name: '{{ ansible_name_module }} | copy image files to web server '
           copy:
             src: "{{ dir_deploy }}/nginx-images/{{ item }}"
-            dest: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ item }}"
+            dest: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ item }}"
             mode: 0777
             force: yes
           loop: "{{ rhcos_image_iso_names }}"
@@ -53,7 +72,7 @@
           find:
             file_type: file
             paths:
-              - "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/"
+              - "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/"
             patterns: '*.qcow2.gz'
           register: qcow2_iso_files
 

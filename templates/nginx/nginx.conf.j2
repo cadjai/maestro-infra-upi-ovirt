@@ -52,6 +52,10 @@ http {
         location /{{ ign_iso_repos_name | d('rhcos-isos') }}/ {
            autoindex on;
         }
+
+        location /{{ ign_iso_repos_name | d('rhcos-isos') }}/{{ ocp_release_version }}/ {
+           autoindex on;
+        }
 {% endif %}
 
         location / {
