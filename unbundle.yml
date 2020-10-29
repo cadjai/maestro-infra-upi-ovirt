@@ -7,7 +7,7 @@
   vars:
     module: "registry"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
-    dir_bundle_location: "/data/created-bundles"
+    dir_bundle_location: "/data/bundle"
   pre_tasks:
     - name: '{{ ansible_name_module }} | yum | install required packages on registry '
       yum:
@@ -32,7 +32,7 @@
         paths:
           - "{{ dir_bundle_location }}/"
         patterns: 
-          - '*.tar'
+          - '*.tar.*'
           - '*.sha256'
       delegate_to: 'localhost'
       register: bundle_files
@@ -52,7 +52,7 @@
         file_type: file
         paths:
           - "/tmp/bundles"
-        patterns: '*.tar'
+        patterns: '*.tar.xz'
       register: bundle_image_files
 
     - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for each artifact'
@@ -71,7 +71,7 @@
             file_type: file
             paths:
               - "/tmp/bundles"
-            patterns: '*openshift*.tar'
+            patterns: '*openshift*.tar.xz'
           register: bundle_image_files
 
         - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for each artifact'
@@ -93,6 +93,17 @@
           loop: "{{ bundle_image_files.files }}"
           when:
             - bundle_image_files is defined
+          register: unbundle_out
+
+        - name: Print Output
+          debug:
+            var: unbundle_out
+
+        - name: '{{ ansible_name_module }} | set_fact | xz_image_file '
+          set_fact:
+            xz_image_file: "{{ unbundle_out.results[0].item }}"
+          when:
+            - unbundle_out is defined
 
         - name: '{{ ansible_name_module }} | find | *.xz file on registry '
           find:
@@ -136,8 +147,8 @@
 
         - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
           set_fact:
-            local_registry_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/deploy/mirror/docker/registry/v2"
-            local_registry_config_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/deploy/secrets/docker"
+            local_registry_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/platform/mirror/docker/registry/v2"
+            local_registry_config_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/platform/secrets/docker"
           when:
             - unbundle_out is defined
             - not unbundle_out.failed | d(false) | bool
