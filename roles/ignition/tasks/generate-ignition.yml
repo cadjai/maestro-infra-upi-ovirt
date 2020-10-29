@@ -29,6 +29,15 @@
     cmd: "cat {{ ocp_registry_pull_secret_file | dirname }}/ocp-combined-pullsecret.json"
   register: ocp_registry_pull_secret 
  
+- name: '{{ ansible_name_module }} | shell:rm | Ensure the ignition directories are empty'
+  shell: rm -rf {{ item }}/
+  loop:
+    - "{{ dir_deploy }}/cluster"
+    - "{{ dir_deploy }}/configs"
+    - "{{ dir_deploy }}/nginx"
+    - "{{ dir_deploy }}/secrets"
+  ignore_errors: true
+
 - name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
   file:
     path: "{{ item }}"
@@ -37,15 +46,6 @@
   loop:
     - "{{ dir_deploy }}/cluster"
     - "{{ dir_deploy }}/configs"
-
-- name: '{{ ansible_name_module }} | shell:rm | Ensure the ignition directories are empty'
-  shell: rm -rf {{ item }}/*
-  loop:
-    - "{{ dir_deploy }}/cluster"
-    - "{{ dir_deploy }}/configs"
-    - "{{ dir_deploy }}/nginx"
-    - "{{ dir_deploy }}/secrets"
-  ignore_errors: true
 
 - name: '{{ ansible_name_module }} | template | Copy install-config.yml into place'
   template:
