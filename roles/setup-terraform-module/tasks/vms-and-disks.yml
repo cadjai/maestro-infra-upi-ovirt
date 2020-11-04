@@ -28,7 +28,7 @@
     ovirt_url: "{{ ovirt_url }}"
     ovirt_username: "{{ ovirt_username }}"
     ovirt_password: "{{ ovirt_password }}"
-    vm_template_id: "{{ vm_template_id }}"
+    vm_template_id: "{{ vm_template_id if not hostvars[item].vm_template_id is defined else   hostvars[item].vm_template_id }}"
     cluster_id: "{{ cluster_id }}"
     storage_domain_id: "{{ storage_domain_id }}"
     vm_memory: "{{ hostvars[item].vm_memory | d(vm_memory) }}"
