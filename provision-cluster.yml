@@ -14,6 +14,17 @@
   when:
     - (create_template is defined and create_template | bool) or coreos_vm_template_id is not defined or (coreos_vm_template_id is defined and coreos_vm_template_id == '' )
 - import_playbook: setup-cluster-resources.yml   # Setup Terraform to provision UPI cluster resources
+  vars:
+    create_workers: true
+    include_masters: true
+    include_workers: true
 - import_playbook: build-upi-cluster.yml   # Use terraform to provision cluster ressources
+  vars:
+    create_workers: true
+    include_masters: true
+    include_workers: true
 - import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces
+  vars:
+    include_masters: true
+    include_workers: true
   
