@@ -1,11 +1,11 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
-- name: ' Konductor | Provision UPI Infra | approve-csr.yml' 
+- name: ' Konductor | Provision UPI Infra | complete-install.yml' 
   hosts: localhost
   become: yes
   vars_files:
     - 'vars/global.yml'
   vars:
-    module: "approve-csr"
+    module: "complete-install"
     ansible_name_module: " Konductor | Provision UPI Cluster | {{ module }}"
     dir_bundle_location: "/data/bundle"
   pre_tasks:
