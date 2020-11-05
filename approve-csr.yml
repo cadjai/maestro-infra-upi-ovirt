@@ -1,0 +1,47 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | approve-csr.yml' 
+  hosts: localhost
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "approve-csr"
+    ansible_name_module: " Konductor | Provision UPI Cluster | {{ module }}"
+    dir_bundle_location: "/data/bundle"
+  pre_tasks:
+    - name: '{{ ansible_name_module }} | file:directory | Ensure install directory exist '
+      file:
+        path: "{{ dir_install }}"
+        state: directory
+        mode: 0755 
+
+    - name: '{{ ansible_name_module }} | shell:cp | Copy ignition files to install location '
+      shell:  cp {{ dir_cluster }}/*.ign {{ dir_install }}
+
+    - name: '{{ ansible_name_module }} | shell:cp | Copy kubeconfig files to install location '
+      shell:  cp -r {{ dir_secrets }}/cluster/auth {{ dir_install }}
+
+  tasks:
+    - name: '{{ ansible_name_module }} | shell:oc | retrieve pending csrs'
+      shell: > 
+         {{ openshift_client_binary }} --kubeconfig={{ dir_install }}/auth/kubeconfig \
+         get csr -A | grep -i pending | awk '{print $1}'
+      register: pending_csrs
+
+    - name: '{{ ansible_name_module }} | shell:oc | approve pending csrs'
+      shell: > 
+         {{ openshift_client_binary }} --kubeconfig={{ dir_install }}/auth/kubeconfig \
+          adm certificate approve {{ item }}
+      loop: "{{ pending_csrs.stdout_lines }}"
+      when:
+        - pending_csrs is defined
+        - pending_csrs.rc == 0
+        - pending_csrs.stdout_lines is defined 
+        - pending_csrs.stdout_lines | length > 0
+      register: csr_approval_out
+
+    - name: '{{ ansible_name_module }} | shell:openshift-install | wait for installation'
+      shell: > 
+         {{ openshift_install_binary }} wait-for install-complete \
+         --dir {{ dir_install }}  --log-level debug
+      register: install_complete_out
