@@ -1,10 +1,6 @@
 ---
 # tasks file for ignition
 
-#- name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
-#  slurp:
-#    src: "{{ registra_ca_local_dir }}/{{ registry_ca_local_name }}"
-#  register: registry_ca_cert
 - name: '{{ ansible_name_module }} | yum | install required packages '
   become: yes
   yum:

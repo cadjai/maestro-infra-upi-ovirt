@@ -1,16 +1,5 @@
 ---
 # tasks file for build-upi-infra-resources
-
-- name: Print all instances in group instance
-  debug:
-    var: item
-  loop: "{{ groups['instances'] }}"
-
-- name: Print all instances in group {{ instance_group }} 
-  debug:
-    var: item
-  loop: "{{ groups[instance_group] }}"
-
 ####### Terraform Init
 - name: '{{ ansible_name_module }} | shell | terraform init'
   shell: terraform init
@@ -18,7 +7,6 @@
     chdir: "{{ tf_module_path }}"
   with_items:
     - "{{ tf_module_path }}"
-    #- "{{ instance_search_paths }}"
 
 ####### Terraform Apply
 - name: '{{ ansible_name_module }} | command | terraform | apply'
@@ -27,11 +15,6 @@
     force_init: true
     state: present
   ignore_errors: true
-  #failed_when:
-  #  - tf_apply.changed | bool
-  #  - tf_apply.failed | bool
-  #  - tf_apply.results[0].rc > 0
-  #  - "'Cannot add VM. Related operation is currently in progress' not in tf_apply.results[0].stderr"
   register: tf_apply
 
 - name: '{{ ansible_name_module }} | command | wait for all vms to be created before running next tasks'

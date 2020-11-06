@@ -5,7 +5,6 @@
 - name: '{{ ansible_name_module }} | template | ignition file '
   vars:
     host: "{{ item }}"
-    #hgroup: "{{ item }}"
   template:
     src: "templates/rhcos/ignition.config.j2"
     dest: "{{ (hostvars[item].custom_script | dirname) + '/' + item + '-' + (hostvars[item].custom_script | basename) }}"
