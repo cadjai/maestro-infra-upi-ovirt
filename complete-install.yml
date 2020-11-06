@@ -44,6 +44,9 @@
       shell: > 
          {{ openshift_install_binary }} wait-for install-complete \
          --dir {{ dir_install }}  --log-level debug
+      failed_when:
+        - install_complete_out.rc > 0
+        - not 'Still waiting for the cluster to initialize' in install_complete_out.stderr
       register: install_complete_out
 
     ####### Rerun the CSR approval tasks in case it was skipped the first time around 
@@ -58,7 +61,7 @@
           shell: > 
              {{ openshift_client_binary }} --kubeconfig={{ dir_install }}/auth/kubeconfig \
              get csr -A | grep -i pending | awk '{print $1}'
-          register: pending_csrs
+          register: rpending_csrs
 
         - name: '{{ ansible_name_module }} | shell:oc | approve pending csrs'
           shell: > 
@@ -66,9 +69,9 @@
               adm certificate approve {{ item }}
           loop: "{{ pending_csrs.stdout_lines }}"
           when:
-            - pending_csrs is defined
-            - pending_csrs.rc == 0
-            - pending_csrs.stdout_lines is defined 
-            - pending_csrs.stdout_lines | length > 0
+            - rpending_csrs is defined
+            - rpending_csrs.rc == 0
+            - rpending_csrs.stdout_lines is defined 
+            - rpending_csrs.stdout_lines | length > 0
           register: csr_approval_out
 
