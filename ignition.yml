@@ -10,4 +10,4 @@
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
     update_cluster_network_config: true
   roles:
-    - { role: ignition, host_rhcos_images: 'false' } 
+    - { role: ignition } 
