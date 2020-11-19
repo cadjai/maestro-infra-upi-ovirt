@@ -2,11 +2,17 @@
 # tasks file for setup-terraform-module
 
 ####### Stage Ingintion config custom scripts for host groups if applicable
+- name: '{{ ansible_name_module }} | set_fact | ignition template name '
+  set_fact:
+    ignition_template_prefix: "ignition.config"
+    ignition_template_suffix: "-v{{ (ignition_spec_version | d('2.2.0')).split('.')[0] }}.j2"
+
 - name: '{{ ansible_name_module }} | template | ignition file '
   vars:
     host: "{{ item }}"
   template:
-    src: "templates/rhcos/ignition.config.j2"
+    src: "templates/rhcos/{{ ignition_template_prefix }}{{ ignition_template_suffix }}"
+    #src: "templates/rhcos/ignition.config.j2"
     dest: "{{ (hostvars[item].custom_script | dirname) + '/' + item + '-' + (hostvars[item].custom_script | basename) }}"
     force: yes 
   loop: "{{ groups.all }}"
