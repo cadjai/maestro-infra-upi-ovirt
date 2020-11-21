@@ -104,6 +104,8 @@
             xz_image_file: "{{ unbundle_out.results[0].item }}"
           when:
             - unbundle_out is defined
+            - unbundle_out.results is defined
+            - unbundle_out.results[0] is defined
 
         - name: '{{ ansible_name_module }} | find | *.xz file on registry '
           find:
@@ -160,13 +162,33 @@
             force: yes
           register: oc_client_copied
 
+        - name: '{{ ansible_name_module }} | shell | verify exiting oc client binary on registry'
+          shell: which oc
+          ignore_errors: true
+          register: installed_oc
+
+        - name: '{{ ansible_name_module }} | shell | remove existing oc client binary from registry'
+          shell: rm -f {{ item }}
+          with_items:
+            - "{{ installed_oc.stdout }}"
+            - "{{ installed_oc.stdout | dirname }}/kubectl"
+          when:
+            - installed_oc is defined
+            - installed_oc.stdout is defined
+            - installed_oc.stdout != ''
+
+        - name: '{{ ansible_name_module }} | stat | oc client binaryi file exist on registry'
+          stat:
+            path: "/tmp/{{ oc_client_binary | basename }}"
+          register: oc_client_st
+
         - name: '{{ ansible_name_module }} | command | install oc client binary to registry'
           command: "tar zxvf /tmp/{{ oc_client_binary | basename }} -C /usr/bin"
           become: yes
           when:
-            - oc_client_copied is defined
-            - oc_client_copied.path is defined
-            - oc_client_binary | basename in oc_client_copied.path  
+            - oc_client_st is defined
+            - oc_client_st.stat is defined
+            - oc_client_st.stat.isreg 
 
         - name: '{{ ansible_name_module }} | command | generate authfile for registry'
           command: > 
