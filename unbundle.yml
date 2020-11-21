@@ -95,62 +95,18 @@
             - bundle_image_files is defined
           register: unbundle_out
 
-        - name: Print Output
-          debug:
-            var: unbundle_out
-
         - name: '{{ ansible_name_module }} | set_fact | xz_image_file '
           set_fact:
-            xz_image_file: "{{ unbundle_out.results[0].item }}"
+            xz_image_file_path: "{{ unbundle_out.results[0].dest }}"
           when:
             - unbundle_out is defined
             - unbundle_out.results is defined
             - unbundle_out.results[0] is defined
-
-        - name: '{{ ansible_name_module }} | find | *.xz file on registry '
-          find:
-            file_type: file
-            paths:
-              - "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}/"
-            patterns: '*.xz'
-          loop: "{{ bundle_image_files.files }}"
-          when:
-            - bundle_image_files is defined
-          register: xd_image_files
-
-        - name: '{{ ansible_name_module }} | set_fact | xz_image_file '
-          set_fact:
-            xz_image_file: "{{ xd_image_files.results[0].files[0] }}"
-          when:
-            - xd_image_files is defined
-            - xd_image_files.results is defined
-            - xd_image_files.results[0].files[0] is defined
-            - xd_image_files.results[0].matched is defined
-            - xd_image_files.results[0].matched > 0 
-          
-        - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for artifact'
-          file:
-            state: directory
-            path: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}" 
-            mode: 0755
-          when:
-            - xz_image_file is defined
-          register: xz_bundle_image_dirs
-
-        - name: '{{ ansible_name_module }} | unarchive | bundle files '
-          unarchive:
-            src: "{{ xz_image_file.path }}"
-            remote_src: yes
-            dest: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/"
-            mode: 0755
-          when:
-            - xz_image_file is defined
-          register: unbundle_out
-
+        
         - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
           set_fact:
-            local_registry_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/platform/mirror/docker/registry/v2"
-            local_registry_config_dir: "{{ xz_image_file.path | dirname }}/{{ ((xz_image_file.path | basename).split('.tar')[0]).replace('.','-') }}/platform/secrets/docker"
+            local_registry_dir: "{{ xz_image_file_path }}/platform/mirror/docker/registry/v2"
+            local_registry_config_dir: "{{ xz_image_file_path }}/platform/secrets/docker"
           when:
             - unbundle_out is defined
             - not unbundle_out.failed | d(false) | bool
@@ -214,13 +170,12 @@
             - authfile_created is defined
           register: registry_loaded
 
-        - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
+        - name: '{{ ansible_name_module }} | file:absent | bundles staging directories'
           file:
             state: absent 
             path: "{{ item }}"
           with_items: 
-            - "{{ xz_bundle_image_dirs.path }}"
-            - "{{ bundle_image_dirs.results[0].path }}"
+            - "{{ xz_image_file_path }}"
           when:
             - registry_loaded is defined
             - registry_loaded.rc == 0
