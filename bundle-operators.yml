@@ -93,7 +93,7 @@
     - name: '{{ ansible_name_module }} | Create Package index '
       shell: >
         grpcurl -plaintext localhost:50051 api.Registry/ListPackages \
-        > {{ pkg_index_out | d('/tmp/packages.out') }}
+        > {{ dir_bundle_location | d('/tmp') }}/{{ pkg_index_out | d('packages.out') }}
       register: pkg_idx_out
 
     - name: '{{ ansible_name_module }} | opm:index:prune | prune package index '
