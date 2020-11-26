@@ -1,0 +1,130 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | bundle-operators.yml' 
+  hosts: localhost 
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "bundle-operators"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+    dir_bundle_location: "/data/bundle"
+  pre_tasks:
+
+  tasks:
+
+    - name: '{{ ansible_name_module }} | podman:run | Start operator-index container '
+      command: podman run -d --name {{ operator_collector_name | d('operator-index-collector') }} \
+        -p 50051:50051 {{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_tag | d('v4.6') }}
+
+    - name: '{{ ansible_name_module }} | copy | opm client to registry'
+      when:
+        - install_opm is defined
+        - install_opm | bool 
+      block:
+        - name: '{{ ansible_name_module }} | copy | opm client to registry'
+          copy:
+            src: "{{ opm_client_binary }}"
+            dest: "/tmp/{{ opm_client_binary | basename }}"
+            force: yes
+          register: opm_client_copied
+
+        - name: '{{ ansible_name_module }} | shell | verify exiting opm binary on registry'
+          shell: which opm
+          ignore_errors: true
+          register: installed_opm
+
+        - name: '{{ ansible_name_module }} | shell | remove existing opm binary from registry'
+          shell: rm -f {{ item }}
+          with_items:
+            - "{{ installed_opm.stdout }}"
+          when:
+            - installed_opm is defined
+            - installed_opm.stdout is defined
+            - installed_opm.stdout != ''
+
+        - name: '{{ ansible_name_module }} | stat | opm binary file exist on registry'
+          stat:
+            path: "/tmp/{{ opm_client_binary | basename }}"
+          register: opm_client_st
+
+        - name: '{{ ansible_name_module }} | command | install opm binary to registry'
+          command: "tar zxvf /tmp/{{ opm_client_binary | basename }} -C /usr/bin"
+          become: yes
+
+    - name: '{{ ansible_name_module }} | install | grpcurl to registry'
+      when:
+        - install_grpcurl is defined
+        - install_grpcurl | bool 
+      block:
+        - name: '{{ ansible_name_module }} | copy | grpcurl binary to registry'
+          copy:
+            src: "{{ grpcurl_binary }}"
+            dest: "/tmp/{{ grpcurl_binary | basename }}"
+            force: yes
+          register: grpcurl_copied
+
+        - name: '{{ ansible_name_module }} | shell | verify exiting grpcurl binary on registry'
+          shell: which grpcurl
+          ignore_errors: true
+          register: installed_grpcurl
+
+        - name: '{{ ansible_name_module }} | shell | remove existing grpcurl binary from registry'
+          shell: rm -f {{ item }}
+          with_items:
+            - "{{ installed_grpcurl.stdout }}"
+          when:
+            - installed_grpcurl is defined
+            - installed_grpcurl.stdout is defined
+            - installed_grpcurl.stdout != ''
+
+        - name: '{{ ansible_name_module }} | stat | grpcurl binary file exist on registry'
+          stat:
+            path: "/tmp/{{ grpcurl_client_binary | basename }}"
+          register: grpcurl_client_st
+
+        - name: '{{ ansible_name_module }} | command | install grpcurl binary to registry'
+          command: "tar zxvf /tmp/{{ grpcurl_client_binary | basename }} -C /usr/bin"
+
+    - name: '{{ ansible_name_module }} | set_fact | operator index base name '
+      set_fact:
+        operator_index_image_name: "{{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') | basename }}"
+        operator_index_image_name_tag: "{{ operator_index_image_tag | d('v4.6') }}"
+
+    - name: '{{ ansible_name_module }} | Create Package index '
+      shell: >
+        grpcurl -plaintext localhost:50051 api.Registry/ListPackages \
+        > {{ pkg_index_out | d('/tmp/packages.out') }}
+      register: pkg_idx_out
+
+    - name: '{{ ansible_name_module }} | opm:index:prune | prune package index '
+      when:
+        - prune_op_pkg_index is defined
+        - prune_op_pkg_index | bool 
+      block:
+        - name: '{{ ansible_name_module }} | opm:index:prune | update operator index image '
+          command: >
+            opm index prune \
+            -f {{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_tag | d('v4.6') }} \
+            -p {{ mirrored_operator_list }} \
+            -t localhost:5000/olm-mirror/{{ operator_index_image_name }}:{{ operator_index_image_name_tag }}
+
+        - name: '{{ ansible_name_module }} | skopeo:copy | create update operator index bundle'
+          command: >
+            skopeo copy docker://localhost:5000/olm-mirror/{{ operator_index_image_name }}:{{ operator_index_image_name_tag }} \
+            docker-archive:{{ dir_bundle_location }}/{{ operator_index_image_name }}-{{ operator_index_image_name_tag }}.tar.gz
+
+    - name: '{{ ansible_name_module }} | skopeo:copy | create operator index image bundle '
+      when:
+        - prune_op_pkg_index is not defined or not prune_op_pkg_index | bool
+      block:
+        - name: '{{ ansible_name_module }} | skopeo:copy | copy operator index image to registry '
+          command: >
+            skopeo copy docker://{{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_name_tag }} \
+            docker-archive:{{ dir_bundle_location }}/{{ operator_index_image_name }}-{{ operator_index_image_name_tag }}.tar.gz
+      
+  post_tasks:
+    - name: '{{ ansible_name_module }} | podman:stop | Stop operator-index container '
+      command: podman stop {{ operator_collector_name | d('operator-index-collector') }} 
+
+    - name: '{{ ansible_name_module }} | podman:rm | Remove operator-index container '
+      command: podman rm -f {{ operator_collector_name | d('operator-index-collector') }} 
