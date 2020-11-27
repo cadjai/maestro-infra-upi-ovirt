@@ -2,33 +2,81 @@
 - name: ' Konductor | Provision UPI Infra | bundle-operators.yml' 
   hosts: localhost 
   become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
   vars_files:
     - 'vars/global.yml'
   vars:
     module: "bundle-operators"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
     dir_bundle_location: "/data/bundle"
+    registry_container_name: 'mirror-registry'
+    registry_container_image: 'docker.io/library/registry:2'
+    registry_container_dir: '/var/lib/registry'
+#### If you dont need any of the operator below remove it or comment it
+#### If you have a currated list to prune use the mirrored_operator_list
+    operator_registres_to_mirror:
+       redhat-operators: 
+         source: registry.redhat.io/redhat/redhat-operator-index:v4.6
+         container_port: 50051
+         mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
+       certified-operators: 
+       #  source: registry.redhat.io/redhat/certified-operator-index:v4.6
+       #  container_port: 50151
+       #  mirrored_operator_list:
+       redhat-marketplace: 
+       #  source: registry.redhat.io/redhat/redhat-marketplace-index:v4.6
+       #  container_port: 50251
+       #  mirrored_operator_list:
+       community-operators: 
+       #  source: registry.redhat.io/redhat/community-operator-index:latest
+       #  container_port: 50351
+       #  mirrored_operator_list:
   pre_tasks:
+    - name: '{{ ansible_name_module }} | yum | install required packages on bastion '
+      yum:
+        name:
+          - lzma
+          - python-backports-lzma 
+          - xz-devel
+        state: present
 
   tasks:
 
-    - name: '{{ ansible_name_module }} | podman:run | Start operator-index container '
-      command: podman run -d --name {{ operator_collector_name | d('operator-index-collector') }} \
-        -p 50051:50051 {{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_tag | d('v4.6') }}
+    - name: '{{ ansible_name_module }} | podman:run | Start registry container '
+      command: podman run -d --name {{ registry_container_name }} \
+        -p 5000:5000 -v {{ registry_container_dir }}:/var/lib/registry:z \
+          {{ registry_container_image }}
 
-    - name: '{{ ansible_name_module }} | copy | opm client to registry'
+    - name: '{{ ansible_name_module }} | podman:run | Start operator-index container '
+      command: podman run -d --name operator_collector_{{ item.key  }} \
+        -p {{ item.value.container_port }}:{{ item.value.container_port }}  {{ item.value.source }}
+      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      when:
+        - item.key is defined and item.key != ""
+        - item.value.source is defined and item.value.source != ""
+        - item.value.container_port is defined and item.value.container_port|int > 0
+
+    ### adding extra timeout here to wait for all containers to come up and be bound
+    - name: '{{ ansible_name_module }} | command | wait for all containers to be created'
+      wait_for:
+        timeout: 30
+      delegate_to: localhost
+
+
+    - name: '{{ ansible_name_module }} | copy | opm client to bastion'
       when:
         - install_opm is defined
         - install_opm | bool 
       block:
-        - name: '{{ ansible_name_module }} | copy | opm client to registry'
+        - name: '{{ ansible_name_module }} | copy | opm client to bastion'
           copy:
             src: "{{ opm_client_binary }}"
             dest: "/tmp/{{ opm_client_binary | basename }}"
             force: yes
           register: opm_client_copied
 
-        - name: '{{ ansible_name_module }} | shell | verify exiting opm binary on registry'
+        - name: '{{ ansible_name_module }} | shell | verify exiting opm binary on bastion'
           shell: which opm
           ignore_errors: true
           register: installed_opm
@@ -42,28 +90,28 @@
             - installed_opm.stdout is defined
             - installed_opm.stdout != ''
 
-        - name: '{{ ansible_name_module }} | stat | opm binary file exist on registry'
+        - name: '{{ ansible_name_module }} | stat | opm binary file exist on bastion'
           stat:
             path: "/tmp/{{ opm_client_binary | basename }}"
           register: opm_client_st
 
-        - name: '{{ ansible_name_module }} | command | install opm binary to registry'
+        - name: '{{ ansible_name_module }} | command | install opm binary to bastion'
           command: "tar zxvf /tmp/{{ opm_client_binary | basename }} -C /usr/bin"
           become: yes
 
-    - name: '{{ ansible_name_module }} | install | grpcurl to registry'
+    - name: '{{ ansible_name_module }} | install | grpcurl to bastion'
       when:
         - install_grpcurl is defined
         - install_grpcurl | bool 
       block:
-        - name: '{{ ansible_name_module }} | copy | grpcurl binary to registry'
+        - name: '{{ ansible_name_module }} | copy | grpcurl binary to bastion'
           copy:
             src: "{{ grpcurl_binary }}"
             dest: "/tmp/{{ grpcurl_binary | basename }}"
             force: yes
           register: grpcurl_copied
 
-        - name: '{{ ansible_name_module }} | shell | verify exiting grpcurl binary on registry'
+        - name: '{{ ansible_name_module }} | shell | verify exiting grpcurl binary on bastion'
           shell: which grpcurl
           ignore_errors: true
           register: installed_grpcurl
@@ -77,54 +125,125 @@
             - installed_grpcurl.stdout is defined
             - installed_grpcurl.stdout != ''
 
-        - name: '{{ ansible_name_module }} | stat | grpcurl binary file exist on registry'
+        - name: '{{ ansible_name_module }} | stat | grpcurl binary file exist on bastion'
           stat:
             path: "/tmp/{{ grpcurl_client_binary | basename }}"
           register: grpcurl_client_st
 
-        - name: '{{ ansible_name_module }} | command | install grpcurl binary to registry'
+        - name: '{{ ansible_name_module }} | command | install grpcurl binary to bastion'
           command: "tar zxvf /tmp/{{ grpcurl_client_binary | basename }} -C /usr/bin"
-
-    - name: '{{ ansible_name_module }} | set_fact | operator index base name '
-      set_fact:
-        operator_index_image_name: "{{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') | basename }}"
-        operator_index_image_name_tag: "{{ operator_index_image_tag | d('v4.6') }}"
 
     - name: '{{ ansible_name_module }} | Create Package index '
       shell: >
-        grpcurl -plaintext localhost:50051 api.Registry/ListPackages \
-        > {{ dir_bundle_location | d('/tmp') }}/{{ pkg_index_out | d('packages.out') }}
+        grpcurl -plaintext localhost:{{ item.value.container_port }} api.Registry/ListPackages \
+        > {{ dir_bundle_location | d('/tmp') }}/packages-{{ item.key }}.out
+      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      when:
+        - item.key is defined and item.key != ""
+        - item.value.container_port is defined and item.value.container_port|int > 0
       register: pkg_idx_out
 
     - name: '{{ ansible_name_module }} | opm:index:prune | prune package index '
-      when:
-        - prune_op_pkg_index is defined
-        - prune_op_pkg_index | bool 
+      #when:
+      #  - prune_op_pkg_index is defined
+      #  - prune_op_pkg_index | bool 
       block:
         - name: '{{ ansible_name_module }} | opm:index:prune | update operator index image '
           command: >
             opm index prune \
-            -f {{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_tag | d('v4.6') }} \
-            -p {{ mirrored_operator_list }} \
-            -t localhost:5000/olm-mirror/{{ operator_index_image_name }}:{{ operator_index_image_name_tag }}
+            -f {{ item.value.source }} \
+            -p {{ item.value.mirrored_operator_list }} \
+            -t localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+            - item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list != ""
 
-        - name: '{{ ansible_name_module }} | skopeo:copy | create update operator index bundle'
+        - name: '{{ ansible_name_module }} | podman:push | push updated operator index image'
           command: >
-            skopeo copy docker://localhost:5000/olm-mirror/{{ operator_index_image_name }}:{{ operator_index_image_name_tag }} \
-            docker-archive:{{ dir_bundle_location }}/{{ operator_index_image_name }}-{{ operator_index_image_name_tag }}.tar.gz
+            podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+            - item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list != ""
+
 
     - name: '{{ ansible_name_module }} | skopeo:copy | create operator index image bundle '
-      when:
-        - prune_op_pkg_index is not defined or not prune_op_pkg_index | bool
+      #when:
+      #  - prune_op_pkg_index is not defined or not prune_op_pkg_index | bool
       block:
-        - name: '{{ ansible_name_module }} | skopeo:copy | copy operator index image to registry '
+        - name: '{{ ansible_name_module }} | podman:tag | tag operator index image'
           command: >
-            skopeo copy docker://{{ operator_index_image | d('registry.redhat.io/redhat/redhat-operator-index') }}:{{ operator_index_image_name_tag }} \
-            docker-archive:{{ dir_bundle_location }}/{{ operator_index_image_name }}-{{ operator_index_image_name_tag }}.tar.gz
+            podman tag {{ item.value.source }} \
+            localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+            - not item.value.mirrored_operator_list is defined or (item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list == "")
+
+        - name: '{{ ansible_name_module }} | podman:push | push operator index bundle'
+          command: >
+            podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+            - not item.value.mirrored_operator_list is defined or (item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list == "")
+
       
+    - name: '{{ ansible_name_module }} | Mirror operator catalog | local registry '
+      block:
+        - name: '{{ ansible_name_module }} | Mirror operator catalog | login to registries'
+          command: podman login {{ item.value.source }}
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+          register: registries_login
+
+        - name: '{{ ansible_name_module }} | Mirror operator catalog | oc:adm:catalog:mirror'
+          command: >
+            oc adm catalog mirror localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }} \
+             localhost:5000/{{ item.key }} \
+            -a {{ ocp_registry_pull_secret_file }} \
+             --filter-by-os="linux/amd64" \
+             --insecure
+          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          when:
+            - item.key is defined and item.key != ""
+            - item.value.source is defined and item.value.source != ""
+          register: catalog_mirrored
+
+    - name: '{{ ansible_name_module }} | archive:xz | create operator image bundle '
+      archive:
+        format: xz
+        force_archive: yes
+        path: "{{ registry_container_dir }}"
+        dest: "{{ dir_bundle_location }}/{{ operators }}.tar.xz"
+        #remove: true
+
   post_tasks:
-    - name: '{{ ansible_name_module }} | podman:stop | Stop operator-index container '
-      command: podman stop {{ operator_collector_name | d('operator-index-collector') }} 
+    - name: '{{ ansible_name_module }} | podman:stop | Stop operator-collector containers '
+      command: podman stop operator_collector_{{ item.key }} 
+      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      when:
+        - item.key is defined and item.key != ""
+        - item.value.source is defined and item.value.source != ""
+        - item.value.container_port is defined and item.value.container_port|int > 0
 
     - name: '{{ ansible_name_module }} | podman:rm | Remove operator-index container '
-      command: podman rm -f {{ operator_collector_name | d('operator-index-collector') }} 
+      command: podman rm -f operator_collector_{{ item.key }} 
+      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      when:
+        - item.key is defined and item.key != ""
+        - item.value.source is defined and item.value.source != ""
+        - item.value.container_port is defined and item.value.container_port|int > 0
+
+    - name: '{{ ansible_name_module }} | podman:stop | Stop mirror-registry '
+      command: podman stop {{ registry_container_name | d('mirror-registry') }} 
+
+    - name: '{{ ansible_name_module }} | podman:rm | Remove mirror-registry '
+      command: podman rm -f {{ registry_container_name | d('mirror-registry') }} 
