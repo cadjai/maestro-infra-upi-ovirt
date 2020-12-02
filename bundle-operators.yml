@@ -17,33 +17,18 @@
     opm_client_binary: "files/opm"
     install_grpcurl: "false"
     grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
-#### If you dont need any of the operator below remove it or comment it
 #### If you have a currated list to prune use the mirrored_operator_list
     operator_registres_to_mirror:
        redhat-operators: 
          source: registry.redhat.io/redhat/redhat-operator-index:v4.6
          container_port: 50051
          mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
-       certified-operators: 
-        #source: registry.redhat.io/redhat/certified-operator-index:v4.6
-        #container_port: 50151
-        #mirrored_operator_list:
-       redhat-marketplace: 
-        #source: registry.redhat.io/redhat/redhat-marketplace-index:v4.6
-        #container_port: 50251
-        # mirrored_operator_list:
-       community-operators: 
-        #source: registry.redhat.io/redhat/community-operator-index:latest
-        #container_port: 50351
-        #mirrored_operator_list:
   pre_tasks:
-          #- name: '{{ ansible_name_module }} | yum | install required packages on bastion '
-          #  yum:
-          #    name:
-          #      - xz-devel
-          #      #- lzma
-          #      #- python-backports-lzma 
-          #    state: present
+    #- name: '{{ ansible_name_module }} | yum | install required packages on bastion '
+    #  yum:
+    #    name:
+    #      - xz-devel
+    #    state: present
 
   tasks:
 
@@ -58,7 +43,8 @@
     - name: '{{ ansible_name_module }} | podman:run | Start operator-index container '
       command: podman run -d --name operator_collector_{{ item.key  }} \
         -p {{ item.value.container_port }}:{{ item.value.container_port }}  {{ item.value.source }}
-      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      with_dict:
+        - "{{ operator_registres_to_mirror }}"
       when:
         - item.key is defined and item.key != ""
         - item.value.source is defined and item.value.source != ""
@@ -67,7 +53,7 @@
     ### adding extra timeout here to wait for all containers to come up and be bound
     - name: '{{ ansible_name_module }} | command | wait for all containers to be created'
       wait_for:
-        timeout: 30
+        timeout: "{{ (operator_registres_to_mirror | length) * 5 }}"
       delegate_to: localhost
 
 
@@ -153,7 +139,8 @@
       shell: >
         grpcurl -plaintext localhost:{{ item.value.container_port }} api.Registry/ListPackages \
         > {{ dir_bundle_location | d('/tmp') }}/packages-{{ item.key }}.out
-      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      with_dict:
+        - "{{ operator_registres_to_mirror }}"
       when:
         - item.key is defined and item.key != ""
         - item.value.container_port is defined and item.value.container_port|int > 0
@@ -167,7 +154,8 @@
             -f {{ item.value.source }} \
             -p {{ item.value.mirrored_operator_list }} \
             -t localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -176,7 +164,8 @@
         - name: '{{ ansible_name_module }} | podman:push | push updated operator index image'
           command: >
             podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -189,7 +178,8 @@
           command: >
             podman tag {{ item.value.source }} \
             localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -198,7 +188,8 @@
         - name: '{{ ansible_name_module }} | podman:push | push operator index bundle'
           command: >
             podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -209,7 +200,8 @@
       block:
         - name: '{{ ansible_name_module }} | Mirror operator catalog | login to registries'
           command: podman login {{ item.value.source }}
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -222,7 +214,8 @@
             -a {{ ocp_registry_pull_secret_file }} \
              --filter-by-os="linux/amd64" \
              --insecure
-          loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+          with_dict:
+            - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
@@ -242,7 +235,8 @@
   post_tasks:
     - name: '{{ ansible_name_module }} | podman:stop | Stop operator-collector containers '
       command: podman stop operator_collector_{{ item.key }} 
-      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      with_dict:
+        - "{{ operator_registres_to_mirror }}"
       when:
         - item.key is defined and item.key != ""
         - item.value.source is defined and item.value.source != ""
@@ -250,7 +244,8 @@
 
     - name: '{{ ansible_name_module }} | podman:rm | Remove operator-index container '
       command: podman rm -f operator_collector_{{ item.key }} 
-      loop: "{{ lookup('dict', operator_registres_to_mirror) }}"
+      with_dict:
+        - "{{ operator_registres_to_mirror }}"
       when:
         - item.key is defined and item.key != ""
         - item.value.source is defined and item.value.source != ""
