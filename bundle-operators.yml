@@ -13,6 +13,10 @@
     registry_container_name: 'mirror-registry'
     registry_container_image: 'docker.io/library/registry:2'
     registry_container_dir: '/var/lib/registry'
+    install_opm: "false"
+    opm_client_binary: "files/opm"
+    install_grpcurl: "false"
+    grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
 #### If you dont need any of the operator below remove it or comment it
 #### If you have a currated list to prune use the mirrored_operator_list
     operator_registres_to_mirror:
@@ -21,27 +25,30 @@
          container_port: 50051
          mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
        certified-operators: 
-       #  source: registry.redhat.io/redhat/certified-operator-index:v4.6
-       #  container_port: 50151
-       #  mirrored_operator_list:
+        #source: registry.redhat.io/redhat/certified-operator-index:v4.6
+        #container_port: 50151
+        #mirrored_operator_list:
        redhat-marketplace: 
-       #  source: registry.redhat.io/redhat/redhat-marketplace-index:v4.6
-       #  container_port: 50251
-       #  mirrored_operator_list:
+        #source: registry.redhat.io/redhat/redhat-marketplace-index:v4.6
+        #container_port: 50251
+        # mirrored_operator_list:
        community-operators: 
-       #  source: registry.redhat.io/redhat/community-operator-index:latest
-       #  container_port: 50351
-       #  mirrored_operator_list:
+        #source: registry.redhat.io/redhat/community-operator-index:latest
+        #container_port: 50351
+        #mirrored_operator_list:
   pre_tasks:
-    - name: '{{ ansible_name_module }} | yum | install required packages on bastion '
-      yum:
-        name:
-          - lzma
-          - python-backports-lzma 
-          - xz-devel
-        state: present
+          #- name: '{{ ansible_name_module }} | yum | install required packages on bastion '
+          #  yum:
+          #    name:
+          #      - xz-devel
+          #      #- lzma
+          #      #- python-backports-lzma 
+          #    state: present
 
   tasks:
+
+    - name: '{{ ansible_name_module }} | podman:login | Login to quay container registry'
+      command: podman login --authfile {{ ocp_registry_pull_secret_file }} 
 
     - name: '{{ ansible_name_module }} | podman:run | Start registry container '
       command: podman run -d --name {{ registry_container_name }} \
@@ -113,6 +120,9 @@
 
         - name: '{{ ansible_name_module }} | shell | verify exiting grpcurl binary on bastion'
           shell: which grpcurl
+          failed_when:
+            - installed_grpcurl.rc > 1
+            - not 'no grpcurl in' in installed_grpcurl.stderr
           ignore_errors: true
           register: installed_grpcurl
 
@@ -127,11 +137,17 @@
 
         - name: '{{ ansible_name_module }} | stat | grpcurl binary file exist on bastion'
           stat:
-            path: "/tmp/{{ grpcurl_client_binary | basename }}"
+            path: "/tmp/{{ grpcurl_binary | basename }}"
           register: grpcurl_client_st
 
         - name: '{{ ansible_name_module }} | command | install grpcurl binary to bastion'
-          command: "tar zxvf /tmp/{{ grpcurl_client_binary | basename }} -C /usr/bin"
+          command: "tar zxvf /tmp/{{ grpcurl_binary | basename }} -C /usr/bin"
+
+    - name: '{{ ansible_name_module }} | file:state=directory | Ensure Archive directory exist '
+      file:
+        path: "{{ dir_bundle_location }}"
+        state: directory
+        recurse: true
 
     - name: '{{ ansible_name_module }} | Create Package index '
       shell: >
@@ -144,9 +160,6 @@
       register: pkg_idx_out
 
     - name: '{{ ansible_name_module }} | opm:index:prune | prune package index '
-      #when:
-      #  - prune_op_pkg_index is defined
-      #  - prune_op_pkg_index | bool 
       block:
         - name: '{{ ansible_name_module }} | opm:index:prune | update operator index image '
           command: >
@@ -171,8 +184,6 @@
 
 
     - name: '{{ ansible_name_module }} | skopeo:copy | create operator index image bundle '
-      #when:
-      #  - prune_op_pkg_index is not defined or not prune_op_pkg_index | bool
       block:
         - name: '{{ ansible_name_module }} | podman:tag | tag operator index image'
           command: >
@@ -218,12 +229,15 @@
           register: catalog_mirrored
 
     - name: '{{ ansible_name_module }} | archive:xz | create operator image bundle '
-      archive:
-        format: xz
-        force_archive: yes
-        path: "{{ registry_container_dir }}"
-        dest: "{{ dir_bundle_location }}/{{ operators }}.tar.xz"
-        #remove: true
+      become: yes
+      command: > 
+        tar -czv --use-compress-program='pigz -9' -v \
+        -f {{ dir_bundle_location }}/operators-bundle.tar.xz \
+        -C {{ registry_container_dir }}/ 
+      args:
+        creates: "{{ dir_bundle_location }}/operators-bundle.tar.xz"
+        warn: false
+        chdir: "{{ registry_container_dir }}/"
 
   post_tasks:
     - name: '{{ ansible_name_module }} | podman:stop | Stop operator-collector containers '
