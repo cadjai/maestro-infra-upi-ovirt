@@ -94,30 +94,12 @@
             - op_bundle_image_files is defined
           register: op_unbundle_out
 
-        - name: Print output of unarchive
-          debug:
-            var: op_unbundle_out
-
-        - name: '{{ ansible_name_module }} | find | inner operator bundle files on registry '
-          find:
-            file_type: file
-            paths:
-              - "{{ op_unbundle_out.results[0].dest }}" 
-            patterns: '*operator*'
+        - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
+          set_fact:
+            local_registry_dir: "{{ op_unbundle_out.results[0].invocation.module_args.dest }}/docker/registry/v2"
           when:
             - op_unbundle_out is defined
-            - op_unbundle_out.results is defined
-            - op_unbundle_out.results[0].dest is defined
-            - op_unbundle_out.results[0].dest != ""
-          register: op_inner_bundle_files
-
-        - name: '{{ ansible_name_module }} | podman:load | inner operator bundle on registry '
-          command: podman load -i {{ op_inner_bundle_files.files[0].path }}
-          register: op_index_image_loaded
-
-        - name: Print output of image loading 
-          debug:
-            var: op_index_image_loaded
+            - not op_unbundle_out.failed | d(false) | bool
 
         - name: '{{ ansible_name_module }} | command | generate authfile for registry'
           command: > 
@@ -148,7 +130,8 @@
             state: absent 
             path: "{{ item }}"
           with_items: 
-            - "{{ xz_image_file_path }}"
+            - "{{ dir_bundle_staging }}"
           when:
             - registry_loaded is defined
-            - registry_loaded.rc == 0
+            - registry_loaded.changed | bool
+            - not registry_loaded.failed | bool
