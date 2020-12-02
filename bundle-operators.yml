@@ -231,9 +231,9 @@
     - name: '{{ ansible_name_module }} | archive:xz | create operator image bundle '
       become: yes
       command: > 
-        tar -czv --use-compress-program='pigz -9' -v \
+        tar -c --use-compress-program='pigz -9' -v \
         -f {{ dir_bundle_location }}/operators-bundle.tar.xz \
-        -C {{ registry_container_dir }}/ 
+         {{ registry_container_dir }}/ 
       args:
         creates: "{{ dir_bundle_location }}/operators-bundle.tar.xz"
         warn: false
