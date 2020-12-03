@@ -1,0 +1,70 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | unbundle-ocp-images-for-operators.yml' 
+  hosts: localhost 
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "registry"
+    ansible_name_module: " Konductor | Unbundle Images | {{ module }}"
+    bundle_file_location: "/data/bundle/artifactory/artifactory-bundle.tar.xz"
+    dir_bundle_staging: "/tmp/bundles"
+    release_image_repository: "openshift-release-dev"
+  pre_tasks:
+    - name: '{{ ansible_name_module }} | yum | install required packages on registry '
+      yum:
+        name:
+          - tar 
+          - podman
+          - jq
+          - lzma
+          - python-backports-lzma
+          - xz-devel
+        state: present
+
+  tasks:
+    - name: '{{ ansible_name_module }} | file:directory | Ensure the images staging directory exist'
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: 0755
+      loop:
+        - "{{ dir_bundle_staging }}"
+
+    - name: '{{ ansible_name_module }} | unarchive:xz | bundle on registry '
+      unarchive:
+        src: "{{ bundle_file_location }}"
+        remote_src: yes
+        dest: "{{ dir_bundle_staging }}"
+        mode: 0755
+      register: unbundle_out
+
+    - name: '{{ ansible_name_module }} | command | generate authfile for registry'
+      command: > 
+        podman login -u {{ registry_admin_username }} -p {{ registry_admin_password }} \
+           --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
+           {{ registry_host_fqdn }}:{{ registry_host_port }}
+      register: authfile_created
+
+    - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
+      command: > 
+        oc image mirror {{ ocp_release_version }} \
+           -a {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
+           --from-dir={{ dir_bundle_staging }} \
+           "file://{{ local_repository }}/release:{{ ocp_release_version }}*" \
+           {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }}/{{ release_image_repository }} \
+           --insecure=true 
+      when:
+        - authfile_created is defined
+      register: registry_loaded
+
+    - name: '{{ ansible_name_module }} | file:absent | bundles staging directories'
+      file:
+        state: absent 
+        path: "{{ item }}"
+      with_items: 
+        - "{{ dir_bundle_staging }}"
+      when:
+        - registry_loaded is defined
+        - registry_loaded.changed | bool
+        - not registry_loaded.failed | bool
