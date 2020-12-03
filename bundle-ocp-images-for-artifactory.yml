@@ -1,0 +1,44 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | bundle-ocp-images-for-artifactory.yml' 
+  hosts: localhost 
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "bundle-operators"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+    dir_bundle_location: "/data/bundle"
+    ocp_release_image_registry: "quay.io"
+    ocp_release_image_repository: "openshift-release-dev/ocp-release"
+    ocp_release_version: "4.6.4"
+    ocp_release_arch: "x86_64"
+
+  tasks:
+
+    - name: '{{ ansible_name_module }} | file:state=directory | Ensure Archive directory exist '
+      file:
+        path: "{{ dir_bundle_location }}"
+        state: directory
+        recurse: true
+
+    - name: '{{ ansible_name_module }} | Mirror image registry | oc:adm:release:mirror'
+      command: >
+        oc adm release mirror \
+        -a {{ ocp_registry_pull_secret_file }} \
+         --from={{ ocp_release_image_registry}}/{{ ocp_release_image_repository }}:{{ocp_release_version }}-{{ ocp_release_arch }} \
+         --to-dir={{ dir_bundle_location }} \
+         --insecure=true
+      register: catalog_mirrored
+
+    - name: '{{ ansible_name_module }} | archive:xz | create artifactory image bundle '
+      become: yes
+      command: >
+        tar -cvf {{ dir_bundle_location }}/artifactory-bundle.tar.xz \
+         {{ dir_bundle_location }}/
+      args:
+        creates: "{{ dir_bundle_location }}/artifactory-bundle.tar.xz"
+        warn: false
+        chdir: "{{ dir_bundle_location }}/"
+    
