@@ -51,7 +51,7 @@
         oc image mirror {{ ocp_release_version }} \
            -a {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
            --from-dir={{ dir_bundle_staging }} \
-           "file://{{ local_repository }}/release:{{ ocp_release_version }}*" \
+           "file://openshift/release:{{ ocp_release_version }}*" \
            {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }}/{{ release_image_repository }} \
            --insecure=true 
       when:
