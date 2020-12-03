@@ -9,7 +9,7 @@
   vars:
     module: "bundle-operators"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
-    dir_bundle_location: "/data/bundle"
+    dir_bundle_location: "/data/bundle/artifactory"
     ocp_release_image_registry: "quay.io"
     ocp_release_image_repository: "openshift-release-dev/ocp-release"
     ocp_release_version: "4.6.4"
@@ -36,7 +36,7 @@
       become: yes
       command: >
         tar -cvf {{ dir_bundle_location }}/artifactory-bundle.tar.xz \
-         {{ dir_bundle_location }}/
+         -C {{ dir_bundle_location }} .
       args:
         creates: "{{ dir_bundle_location }}/artifactory-bundle.tar.xz"
         warn: false
