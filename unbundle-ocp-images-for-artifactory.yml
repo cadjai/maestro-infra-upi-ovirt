@@ -46,14 +46,19 @@
            {{ registry_host_fqdn }}:{{ registry_host_port }}
       register: authfile_created
 
+    - name: '{{ ansible_name_module }} | set_fact |  authfile for registry'
+      set_fact:
+        registry_auth_config: "{{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json"
+      when:
+        - authfile_created is defined
+
     - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
       command: > 
-        oc image mirror {{ ocp_release_version }} \
-           -a {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
+        oc image mirror \
+           -a {{ registry_auth_config }} \
            --from-dir={{ dir_bundle_staging }} \
-           "file://openshift/release:{{ ocp_release_version }}*" \
-           {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }}/{{ release_image_repository }} \
-           --insecure=true 
+           file://openshift/release:{{ ocp_release_version }}* \
+           {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }}/{{ release_image_repository }} --loglevel=8
       when:
         - authfile_created is defined
       register: registry_loaded
