@@ -43,7 +43,7 @@
       command: > 
         podman login -u {{ registry_admin_username }} -p {{ registry_admin_password }} \
            --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
-           {{ registry_host_fqdn }}:{{ registry_host_port }}
+           {{ registry_host_fqdn }}
       register: authfile_created
 
     - name: '{{ ansible_name_module }} | set_fact |  authfile for registry'
@@ -58,7 +58,7 @@
            -a {{ registry_auth_config }} \
            --from-dir={{ dir_bundle_staging }} \
            file://openshift/release:{{ ocp_release_version }}* \
-           {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }}/{{ release_image_repository }} --loglevel=8
+           {{ registry_host_fqdn }}/{{ local_repository }}/{{ release_image_repository }} --loglevel=8
       when:
         - authfile_created is defined
       register: registry_loaded
