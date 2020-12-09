@@ -1,0 +1,19 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | unbundle-operators.yml' 
+  hosts: localhost 
+  become: yes
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "unbundle operator"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+    dir_bundle_location: "/data/bundle"
+    dir_bundle_staging: "/tmp/bundles"
+    process_operator_bundle: "true"
+
+  tasks:
+    - name: Push operator bundle content into artifactory
+      import_role:
+        name: mirror-ocp4-content-artifactory
+        tasks_from: unbundle-operators.yml
+
