@@ -21,6 +21,9 @@ roles:
   - src: https://github.com/cadjai/install-and-configure-standalone-docker-registry.git 
     scm: git
     name: registry
+  - src: https://github.com/cadjai/mirror-ocp4-contents-for-artifactory.git 
+    scm: git
+    name: mirror-ocp4-content-artifactory 
 
 collections:
   #- name: https://github.com/nginxinc/ansible-collection-nginx.git

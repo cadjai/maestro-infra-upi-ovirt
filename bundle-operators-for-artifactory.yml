@@ -1,0 +1,32 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: ' Konductor | Provision UPI Infra | bundle-operators.yml' 
+  hosts: localhost 
+  become: yes
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  vars_files:
+    - 'vars/global.yml'
+  vars:
+    module: "bundle-operators"
+    ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
+    dir_bundle_location: "/data/bundle"
+    registry_container_name: 'mirror-registry'
+    registry_container_image: 'docker.io/library/registry:2'
+    registry_container_dir: '/var/lib/registry'
+    install_opm: "false"
+    opm_client_binary: "files/opm"
+    install_grpcurl: "false"
+    grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
+    operator_registres_to_mirror:
+       redhat-operators: 
+         source: registry.redhat.io/redhat/redhat-operator-index:v4.6
+         container_port: 50051
+         mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
+
+  tasks:
+
+    - name: Create operator bundle for artifactory 
+      import_role:
+        name: mirror-ocp4-content-artifactory
+        tasks_from: bundle-operators.yml
+
