@@ -1,0 +1,33 @@
+# Ovirt cluster info
+vault_ovirt_username: 'admin@internal'
+vault_ovirt_password: ''
+vault_storage_domain_id: ''
+vault_cluster_id: ''
+vault_vm_template_id: ''
+vault_dns_search: ''
+vault_dns_servers: ''
+vault_vm_user: 'root'
+vault_vm_rootpw: ''
+vault_host_subdomain: 'ocp'
+vault_base_domain: ''
+
+# DNS Client Config
+vault_ipaclient_servers: 'satellite-idm.kitindy.net'
+vault_ipaclient_install_packages: ''
+vault_ipaadmin_principal: ''
+vault_ipaadmin_password: ''
+vault_ipaserver_domain: 'example.net'
+vault_ipaclient_domain: 'ocp.example.net'
+vault_ipaserver_realm: 'example.net'
+vault_ipaclient_ca_cert_file: 'files/ipa-ca.crt'
+vault_ipaclient_hostname: ''
+
+# Registry Config
+vault_registry_host_fqdn: 'registry.example.net'
+vault_registry_secret: ''
+vault_registry_admin_username: ''
+vault_registry_admin_password: ''
+
+# operator Registry Config
+vault_default_operator_registry_username: ''
+vault_default_operator_registry_password: ''
