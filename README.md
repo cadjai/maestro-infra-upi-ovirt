@@ -45,9 +45,9 @@ To provision cluster resources use the provision-cluster.yml playbook.
 To pre-provision the RHCOS template to use during cluster resource provisining use the provision-rhcos-template.yml playbook. 
 If your ignition files have been generated over 24 hours ago you can refresh them by running the refresh-ignition.yml playbook. 
 
-A new vault file was added to store sensitive variables. There is a sample vault file named global-vault.example.yml under vars that shows the content of the vars/global-vault.yml file. Use that to create your own vault. 
-To run any plabooks using the vault file use the following command: 
-`ansible-playbook -i inventory/ -i vars/global-vault.yml <playbook> --vault-id @prompt `  
+A new vault file was added to store sensitive variables. There is a sample vault file named global-vault.example.yml under vars that shows the content of the vars/global-vault.yml file. Use that to create your own vault.  
+To run any plabooks using the vault file use the following command:  
+`ansible-playbook -i inventory/ -i vars/global-vault.yml <playbook> --vault-id @prompt`    
 
 ## Contributing
 
