@@ -33,7 +33,7 @@
   tasks:
 
     - name: '{{ ansible_name_module }} | podman:login | Login to quay container registry'
-      command: podman login --authfile {{ ocp_registry_pull_secret_file }} 
+      command: podman login --authfile {{ ocp_registry_pull_secret_file }} {{ default_operator_registry }}
 
     - name: '{{ ansible_name_module }} | podman:run | Start registry container '
       command: podman run -d --name {{ registry_container_name }} \
@@ -225,10 +225,10 @@
       become: yes
       command: > 
         tar -c --use-compress-program='pigz -9' -v \
-        -f {{ dir_bundle_location }}/operators-bundle.tar.xz \
-         {{ registry_container_dir }}/ 
+        -f {{ dir_bundle_location }}/{{ bundle_file_name }} \
+         -C {{ registry_container_dir }} . 
       args:
-        creates: "{{ dir_bundle_location }}/operators-bundle.tar.xz"
+        creates: "{{ dir_bundle_location }}/{{ bundle_file_name }}"
         warn: false
         chdir: "{{ registry_container_dir }}/"
 
