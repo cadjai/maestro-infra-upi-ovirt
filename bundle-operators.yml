@@ -9,20 +9,6 @@
   vars:
     module: "bundle-operators"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
-    dir_bundle_location: "/data/bundle"
-    registry_container_name: 'mirror-registry'
-    registry_container_image: 'docker.io/library/registry:2'
-    registry_container_dir: '/var/lib/registry'
-    install_opm: "false"
-    opm_client_binary: "files/opm"
-    install_grpcurl: "false"
-    grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
-#### If you have a currated list to prune use the mirrored_operator_list
-    operator_registres_to_mirror:
-       redhat-operators: 
-         source: registry.redhat.io/redhat/redhat-operator-index:v4.6
-         container_port: 50051
-         mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
   pre_tasks:
     #- name: '{{ ansible_name_module }} | yum | install required packages on bastion '
     #  yum:
@@ -33,7 +19,10 @@
   tasks:
 
     - name: '{{ ansible_name_module }} | podman:login | Login to quay container registry'
-      command: podman login --authfile {{ ocp_registry_pull_secret_file }} 
+      command: >
+        podman login -u {{ default_operator_registry_username }} \
+        -p {{ default_operator_registry_password }} \
+          {{ default_operator_registry }}
 
     - name: '{{ ansible_name_module }} | podman:run | Start registry container '
       command: podman run -d --name {{ registry_container_name }} \
@@ -225,23 +214,14 @@
       become: yes
       command: > 
         tar -c --use-compress-program='pigz -9' -v \
-        -f {{ dir_bundle_location }}/operators-bundle.tar.xz \
-         {{ registry_container_dir }}/ 
+        -f {{ dir_bundle_location }}/{{ bundle_file_name }} \
+         -C {{ registry_container_dir }} . 
       args:
-        creates: "{{ dir_bundle_location }}/operators-bundle.tar.xz"
+        creates: "{{ dir_bundle_location }}/{{ bundle_file_name }}"
         warn: false
         chdir: "{{ registry_container_dir }}/"
 
   post_tasks:
-    - name: '{{ ansible_name_module }} | podman:stop | Stop operator-collector containers '
-      command: podman stop operator_collector_{{ item.key }} 
-      with_dict:
-        - "{{ operator_registres_to_mirror }}"
-      when:
-        - item.key is defined and item.key != ""
-        - item.value.source is defined and item.value.source != ""
-        - item.value.container_port is defined and item.value.container_port|int > 0
-
     - name: '{{ ansible_name_module }} | podman:rm | Remove operator-index container '
       command: podman rm -f operator_collector_{{ item.key }} 
       with_dict:
@@ -250,9 +230,6 @@
         - item.key is defined and item.key != ""
         - item.value.source is defined and item.value.source != ""
         - item.value.container_port is defined and item.value.container_port|int > 0
-
-    - name: '{{ ansible_name_module }} | podman:stop | Stop mirror-registry '
-      command: podman stop {{ registry_container_name | d('mirror-registry') }} 
 
     - name: '{{ ansible_name_module }} | podman:rm | Remove mirror-registry '
       command: podman rm -f {{ registry_container_name | d('mirror-registry') }} 
