@@ -1,36 +1,40 @@
 ---
 # Ovirt Cluster Info
-ovirt_url:
-ovirt_username:
-ovirt_password:
-storage_domain_id:
-cluster_id:
-vm_template_id:
-coreos_vm_template_id:
-dns_search:
-dns_servers:
-vm_user:
-vm_rootpw:
-host_subdomain:
+ovirt_url: '{{ vault_ovirt_url }}'
+ovirt_username: '{{ vault_ovirt_username }}'
+ovirt_password: '{{ vault_ovirt_password }}'
+storage_domain_id: '{{ vault_storage_domain_id }}'
+cluster_id: '{{ vault_cluster_id }}'
+vm_template_id: '{{ vault_vm_template_id }}'
+#coreos_vm_template_id: '{{ vault_coreos_vm_template_id }}'
+dns_search: '{{ vault_dns_search }}'
+dns_servers: '{{ vault_dns_servers }}'
+vm_user: '{{ vault_vm_user }}'
+vm_rootpw: '{{ vault_vm_rootpw }}'
+host_subdomain: '{{ vault_host_subdomain }}'
 additional_disks: []
 attach_additional_disks: true
-vm_memory: 2048 
-vm_cpu_cores: 2
-vm_cpu_sockets: 2
+vm_memory: 16
+vm_cpu_cores: 1 
+vm_cpu_sockets: 4
 custom_script: "omit"
 ignition_url: "omit"
-metadata_json_file: ""
+metadata_json_file: "/home/claude/deploy/cluster/metadata.json"
 metadata_json_data: "{{ lookup('file', metadata_json_file) }}"
 
 # Vm Instances to build
+provision_dhcp: false
+provision_dns: false
+provision_lb: true
+provision_registry: true
 authorized_ssh_key: "{{ sshkeys_pub_string }}"
 #Vm to skip
 vm_skip_list:
   - localhost
 
 # DNS Info
-base_domain:
-nic_boot_proto:
+base_domain: '{{ vault_base_domain }}'
+nic_boot_proto: 'dhcp'
 
 #####################################################################################################
 # End of user configurable variables
@@ -38,7 +42,8 @@ nic_boot_proto:
 # OpenShift Version
 version_openshift: "{{ lookup('env', 'varVerOpenshift') }}"
 # openshift-install binary to run
-openshift_install_binary: /usr/local/bin/openshift-install
+openshift_install_binary: /usr/local/bin/openshift-install 
+openshift_client_binary: /usr/local/bin/oc 
 
 # Bash ENV Lookups
 local_home: "{{ lookup('env', 'HOME') }}"
@@ -54,6 +59,7 @@ dir_deploy: "{{ local_home }}/deploy"
 dir_images: "{{ dir_deploy }}/images"
 dir_secrets: "{{ dir_deploy }}/secrets"
 dir_cluster: "{{ dir_deploy }}/cluster"
+dir_install: "{{ dir_deploy }}/install"
 dir_ansible: "{{ dir_deploy }}/ansible"
 dir_terraform: "{{ dir_deploy }}/terraform"
 
@@ -66,36 +72,40 @@ registry_auth_file: "{{ dir_secrets }}/docker/config.json }}"
 # SSH Keys
 sshkeys_priv_file: "{{ local_home }}/.ssh/id_rsa_cluster_deploy"
 sshkeys_priv_string: "{{ lookup('file', '{{ sshkeys_priv_file }}') }}"
-sshkeys_pub_file: "{{ local_home }}/.ssh//id_rsa_cluster_deploy.pub"
+sshkeys_pub_file: "{{ local_home }}/.ssh/id_rsa_cluster_deploy.pub"
 sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
+
 
 # Repo Config
 use_statellite: false
 satellite_server: ''
-yum_repo_file: ''
+yum_repo_file: 'files/yum.repo'
 
 # DNS Client Config
-ipaclient_servers: ''
+ipaclient_servers: '{{ vault_ipaclient_servers }}'
 ipaclient_install_packages: ''
-#ipaadmin_principal: ''
-ipaadmin_password: ''
-ipaserver_domain: ''
-ipaclient_domain: ''
-ipaserver_realm: ''
-ipaclient_ca_cert_file: ''
-#ipaclient_hostname: ''
+#ipaadmin_principal: '{{ vault_ipaadmin_principal }}'
+ipaadmin_password: '{{ vault_ipaadmin_password }}'
+ipaserver_domain: '{{ vault_ipaserver_domain }}'
+ipaclient_domain: '{{ vault_ipaclient_domain }}'
+ipaserver_realm: '{{ vault_ipaserver_realm }}'
+ipaclient_ca_cert_file: 'files/ipa-ca.crt'
+#ipaclient_hostname: '{{ #vault_ipaclient_hostname }}'
 
 # Load balancer Config
 kube_api_port: 6443
 machine_config_server_port: 22623
 
-registry_host_fqdn:
-registry_secret: ''
-registry_admin_username: ''
-registry_admin_password: ''
-secure_registry: false
+# Registry Config
+#registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
+registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
+registry_secret: '{{ vault_registry_secret }}'
+registry_admin_username: '{{ vault_registry_admin_username }}'
+registry_admin_password: '{{ vault_registry_admin_password }}'
+secure_registry: true
 enable_authz_on_registry: true
-generate_selfsigned_registry_certfiles: false
+generate_selfsigned_registry_certfiles: true
+use_containeried_registry: true
 provision_nginx: true
 ign_repos_name: 'ign-repos'
 ign_iso_repos_name: 'rhcos-isos'
@@ -103,25 +113,33 @@ nginx_root_directory: "/opt/rh/rh-nginx116/root/usr/share/nginx/html"
 nginx_conf: "/etc/opt/rh/rh-nginx116/nginx/nginx.conf"
 
 # OCP Cluster Config
-ocp_cluster_name: ''
-ocp_cluster_basedomain: ''
-ocp_hosts_cidr: ''
-ocp_registry_pull_secret_file: ''
-ignition_file_hosting_location: ''
+ocp_cluster_name: '{{ vault_ocp_cluster_name }}'
+ocp_cluster_basedomain: '{{ vault_ocp_cluster_basedomain }}'
+ocp_hosts_cidr: '{{ vault_ocp_hosts_cidr }}'
+ocp_registry_pull_secret_file: 'files/quay-pull-secret.json'
 local_repository: 'openshift4'
 registry_host_port: '5000'
 registra_ca_local_dir: "{{ dir_deploy }}/registry"
 registry_ca_local_name: "registry-ca.crt"
-ignition_file_hosting_url:
-+ocp_master_count: 3
-+ocp_worker_count: 2
+ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
+ocp_master_count: 3
+ocp_worker_count: 2
+rhcos_template_image_name: "rhcos-live.x86_64.iso"
+#rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
-rhcos_image_version_major: "4.5"
+#rhcos_image_version_major: "4.5"
+rhcos_image_version_major: "4.6"
 rhcos_image_version_minor: "latest"
-rhcos_image_iso_names:
+rhcos_image_iso_names: 
   - "rhcos-openstack.x86_64.qcow2.gz"
-  - "rhcos-installer.x86_64.iso"
-rhcos_image_url: "http://{{ nginx_hosts[0] | d(groups.newregistry[0]) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ rhcos_template_image_name }}"
-create_rhcos_template: true
-oc_client_binary: ""
-ocp_release_version: 4.5.8
+  - "rhcos-live.x86_64.iso"
+rhcos_image_url: "http://{{ nginx_hosts[0] | d(groups.newregistry[0]) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
+create_rhcos_template: false
+#create_rhcos_template: true
+#oc_client_binary: "files/oc.tar.gz"
+oc_client_binary: "files/openshift-client-linux-4.6.4.tar.gz"
+ocp_release_version: 4.6.4
+ignition_spec_version: "3.1.0"
+host_rhcos_images: false
+registry_container_auth_dir: '/auth'
+registry_container_cert_dir: '/certs'
