@@ -156,4 +156,5 @@ operator_registres_to_mirror:
     mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
 default_operator_registry_username: "{{ vault_default_operator_registry_username }}"
 default_operator_registry_password: "{{ vault_default_operator_registry_password }}"
-default_operator_registry: 'quay.io'
+default_operator_registry: 'registry.redhat.io'
+bundle_file_name: 'operators-bundle.tar.xz'
