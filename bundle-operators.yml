@@ -2,11 +2,11 @@
 - name: ' Konductor | Provision UPI Infra | bundle-operators.yml' 
   hosts: localhost 
   become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
   vars_files:
+    - 'vars/vault.yml.claude'
     - 'vars/global.yml'
   vars:
+    ansible_python_interpreter: /usr/bin/python3
     module: "bundle-operators"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
   pre_tasks:
@@ -19,6 +19,7 @@
   tasks:
 
     - name: '{{ ansible_name_module }} | podman:login | Login to quay container registry'
+      no_log: true
       command: >
         podman login -u {{ default_operator_registry_username }} \
         -p {{ default_operator_registry_password }} \
@@ -142,7 +143,7 @@
             opm index prune \
             -f {{ item.value.source }} \
             -p {{ item.value.mirrored_operator_list }} \
-            -t localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+            -t localhost:5000/{{ item.value.source.split('/')[1] }}/{{ item.value.source.split('/')[2] }}
           with_dict:
             - "{{ operator_registres_to_mirror }}"
           when:
@@ -152,7 +153,7 @@
 
         - name: '{{ ansible_name_module }} | podman:push | push updated operator index image'
           command: >
-            podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+            podman push --tls-verify=false localhost:5000/{{ item.value.source.split('/')[1] }}/{{ item.value.source.split('/')[2] }}
           with_dict:
             - "{{ operator_registres_to_mirror }}"
           when:
@@ -161,33 +162,28 @@
             - item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list != ""
 
 
-    - name: '{{ ansible_name_module }} | skopeo:copy | create operator index image bundle '
+    - name: '{{ ansible_name_module }} | push original operator index image bundle '
       block:
-        - name: '{{ ansible_name_module }} | podman:tag | tag operator index image'
-          command: >
-            podman tag {{ item.value.source }} \
-            localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
-          with_dict:
-            - "{{ operator_registres_to_mirror }}"
-          when:
-            - item.key is defined and item.key != ""
-            - item.value.source is defined and item.value.source != ""
-            - not item.value.mirrored_operator_list is defined or (item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list == "")
 
-        - name: '{{ ansible_name_module }} | podman:push | push operator index bundle'
+        - name: '{{ ansible_name_module }} | Mirror operator catalog | oc:adm:catalog:mirror'
           command: >
-            podman push --tls-verify=false localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }}
+            oc image mirror  \
+            -a {{ ocp_registry_pull_secret_file }} \
+            {{ item.value.source }} \
+            localhost:5000/{{ item.value.source.split('/')[1] }}/{{ item.value.source.split('/')[2] }} \
+            --insecure=true
           with_dict:
             - "{{ operator_registres_to_mirror }}"
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
-            - not item.value.mirrored_operator_list is defined or (item.value.mirrored_operator_list is defined and item.value.mirrored_operator_list == "")
+          register: catalog_mirrored
 
       
     - name: '{{ ansible_name_module }} | Mirror operator catalog | local registry '
       block:
         - name: '{{ ansible_name_module }} | Mirror operator catalog | login to registries'
+          no_log: false
           command: podman login {{ item.value.source }}
           with_dict:
             - "{{ operator_registres_to_mirror }}"
@@ -198,11 +194,11 @@
 
         - name: '{{ ansible_name_module }} | Mirror operator catalog | oc:adm:catalog:mirror'
           command: >
-            oc adm catalog mirror localhost:5000/{{ item.key }}/{{ item.value.source.split('/')[2] }} \
-             localhost:5000/{{ item.key }} \
+            oc adm catalog mirror localhost:5000/{{ item.value.source.split('/')[1] }}/{{ item.value.source.split('/')[2] }} \
+             localhost:5000 \
             -a {{ ocp_registry_pull_secret_file }} \
              --filter-by-os="linux/amd64" \
-             --insecure
+             --insecure=true
           with_dict:
             - "{{ operator_registres_to_mirror }}"
           when:
