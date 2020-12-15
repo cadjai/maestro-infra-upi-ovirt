@@ -2,39 +2,41 @@
 # run your playbook passing the vault file as an inventory file 
 # and provide the vault option like --vault-id @prompt
 # Ovirt Cluster Info
-vault_ovirt_url: ''
-vault_ovirt_username: ''
-vault_ovirt_password: ''
-vault_storage_domain_id: ''
-vault_cluster_id: ''
-vault_vm_template_id: ''
-#coreos_vm_template_id: ''
-vault_dns_search: ''
-vault_dns_servers: ''
-vault_vm_user: ''
-vault_vm_rootpw: ''
-vault_host_subdomain: ''
-vault_base_domain: ''
+vault_ovirt_url: ""
+vault_ovirt_username: ""
+vault_ovirt_password: ""
+vault_storage_domain_id: ""
+vault_cluster_id: ""
+vault_vm_template_id: ""
+#coreos_vm_template_id: ""
+vault_dns_search: ""
+vault_dns_servers: ""
+vault_vm_user: ""
+vault_vm_rootpw: ""
+vault_host_subdomain: ""
+vault_base_domain: ""
 # DNS Client Config
-vault_ipaclient_servers: ''
-vault_ipaclient_install_packages: ''
-#vault_ipaadmin_principal: ''
-vault_ipaadmin_password: ''
-vault_ipaserver_domain: ''
-vault_ipaclient_domain: ''
-vault_ipaserver_realm: ''
-vault_ipaclient_ca_cert_file: ''
-#vault_ipaclient_hostname: ''
+vault_ipaclient_servers: ""
+vault_ipaclient_install_packages: ""
+#vault_ipaadmin_principal: ""
+vault_ipaadmin_password: ""
+vault_ipaserver_domain: ""
+vault_ipaclient_domain: ""
+vault_ipaserver_realm: ""
+vault_ipaclient_ca_cert_file: ""
+#vault_ipaclient_hostname: ""
 
 # Registry Config
-vault_registry_host_fqdn: ''
-vault_registry_secret: ''
-vault_registry_admin_username: ''
-vault_registry_admin_password: ''
+vault_registry_host_fqdn: ""
+vault_registry_secret: ""
+vault_registry_admin_username: ""
+vault_registry_admin_password: ""
 
 # OCP Cluster Config
-vault_ocp_cluster_name: ''
-vault_ocp_cluster_basedomain: ''
-vault_ocp_hosts_cidr: ''
+vault_ocp_cluster_name: ""
+vault_ocp_cluster_basedomain: ""
+vault_ocp_hosts_cidr: ""
 
-
+#RH Registry info
+vault_default_operator_registry_username: ""
+vault_default_operator_registry_password: ""
