@@ -36,72 +36,37 @@
         - process_operator_bundle is defined
         - process_operator_bundle | bool
       block: 
-        - name: '{{ ansible_name_module }} | find operator bundle files to move to registry '
-          find:
-            file_type: file
-            paths:
-              - "{{ dir_bundle_location }}/"
-            patterns: 
-              - '*operator*'
-          delegate_to: 'localhost'
-          register: op_bundle_files
-
         - name: '{{ ansible_name_module }} | file:directory | Ensure the staging directory exist'
           file:
-            path: "{{ item }}"
+            path: "{{ dir_bundle_staging }}"
             state: directory
             mode: 0755
-          loop:
-            - "{{ dir_bundle_staging }}"
 
         - name: '{{ ansible_name_module }} | copy | operator bundles files to registry '
           copy:
-            src: "{{ item.path }}"
-            dest: "{{ dir_bundle_staging }}"
+            src: "{{ bundle_file_location }}"
+            dest: "{{ dir_bundle_staging }}/{{ bundle_file_location | basename }}"
             mode: 0777
             force: yes
-          loop: "{{ op_bundle_files.files }}"
-          when:
-            - op_bundle_files is defined
           register: op_bundle_copied
-
-        - name: '{{ ansible_name_module }} | find | operator bundle files on registry '
-          find:
-            file_type: file
-            paths:
-              - "{{ dir_bundle_staging }}"
-            patterns: '*operator*'
-          register: op_bundle_image_files
-
-        - name: '{{ ansible_name_module }} | file:directory | Ensure sub directory exist for each artifact'
-          file:
-            state: directory
-            path: "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}" 
-            mode: 0755
-          loop: "{{ op_bundle_image_files.files }}"
-          when:
-            - op_bundle_image_files is defined
-          register: op_bundle_image_dirs
 
         - name: '{{ ansible_name_module }} | unarchive:xz | original operator bundle on registry '
           unarchive:
-            src: "{{ item.path }}"
+            src: "{{ dir_bundle_staging }}/{{ bundle_file_location | basename }}"
             remote_src: yes
-            dest: "{{ item.path | dirname }}/{{ ((item.path | basename).split('.tar')[0]).replace('.','-') }}"
+            dest: "{{ dir_bundle_staging }}"
             mode: 0755
-          loop: "{{ op_bundle_image_files.files }}"
-          when:
-            - op_bundle_image_files is defined
           register: op_unbundle_out
 
         - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
           set_fact:
-            local_registry_dir: "{{ op_unbundle_out.results[0].invocation.module_args.dest }}/docker/registry/v2"
+            local_registry_dir: "{{ dir_bundle_staging }}/docker/registry/v2"
           when:
             - op_unbundle_out is defined
             - not op_unbundle_out.failed | d(false) | bool
 
         - name: '{{ ansible_name_module }} | command | generate authfile for registry'
+          no_log: true
           command: > 
             podman login -u {{ registry_admin_username }} -p {{ registry_admin_password }} \
                --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
