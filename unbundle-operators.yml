@@ -1,15 +1,13 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
 - name: ' Konductor | Provision UPI Infra | unbundle-operators.yml' 
-  hosts: "{{ registry_hosts | default(groups.newregistry) }}"
+  hosts: localhost 
   become: yes
   vars_files:
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "registry"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
-    dir_bundle_location: "/data/bundle"
-    dir_bundle_staging: "/tmp/bundles"
-    process_operator_bundle: "true"
   pre_tasks:
     - name: '{{ ansible_name_module }} | yum | install required packages on registry '
       yum:
@@ -21,6 +19,8 @@
           - python-backports-lzma
           - xz-devel
         state: present
+      when:
+        - not inventory_hostname in ['localhost', 'local']
 
   tasks:
     - name: '{{ ansible_name_module }} | file:directory | Ensure the images directory exist'
@@ -32,9 +32,6 @@
         - "{{ dir_bundle_staging }}"
 
     - name: '{{ ansible_name_module }} | Process operator bundle | on registry '
-      when:
-        - process_operator_bundle is defined
-        - process_operator_bundle | bool
       block: 
         - name: '{{ ansible_name_module }} | file:directory | Ensure the staging directory exist'
           file:
@@ -48,11 +45,17 @@
             dest: "{{ dir_bundle_staging }}/{{ bundle_file_location | basename }}"
             mode: 0777
             force: yes
+          when:
+            - not inventory_hostname in ['localhost', 'local']
           register: op_bundle_copied
+
+        - name: '{{ ansible_name_module }} | set_fact | bundle file location facts '
+          set_fact:
+            local_bundle_dir: "{{ dir_bundle_staging if not inventory_hostname in ['localhost', 'local'] else bundle_file_location | dirname }}"
 
         - name: '{{ ansible_name_module }} | unarchive:xz | original operator bundle on registry '
           unarchive:
-            src: "{{ dir_bundle_staging }}/{{ bundle_file_location | basename }}"
+            src: "{{ local_bundle_dir }}/{{ bundle_file_location | basename }}"
             remote_src: yes
             dest: "{{ dir_bundle_staging }}"
             mode: 0755

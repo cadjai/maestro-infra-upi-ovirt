@@ -158,3 +158,5 @@ default_operator_registry_username: "{{ vault_default_operator_registry_username
 default_operator_registry_password: "{{ vault_default_operator_registry_password }}"
 default_operator_registry: 'registry.redhat.io'
 bundle_file_name: 'operators-bundle.tar.xz'
+bundle_file_location: '/data/bundle/operators-bundle.tar.xz'
+dir_bundle_staging: "/tmp/bundles"
