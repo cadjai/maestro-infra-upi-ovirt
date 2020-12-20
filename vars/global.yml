@@ -160,3 +160,7 @@ default_operator_registry: 'registry.redhat.io'
 bundle_file_name: 'operators-bundle.tar.xz'
 bundle_file_location: '/data/bundle/operators-bundle.tar.xz'
 dir_bundle_staging: "/tmp/bundles"
+local_olm_repository: 'olm-mirror-new'
+source_operators_repository: 'redhat'
+source_operator_index: 'redhat-operator-index'
+source_operator_index_tag: 'v4.6'

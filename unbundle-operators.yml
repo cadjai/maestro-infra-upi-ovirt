@@ -3,7 +3,7 @@
   hosts: localhost 
   become: yes
   vars_files:
-    - 'vars/vault.yml.claude'
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "registry"
@@ -79,21 +79,26 @@
           when:
             - authfile_created is defined
 
+        - name: '{{ ansible_name_module }} | podman:run | Start registry container '
+          command: podman run -d --name {{ registry_container_name }} \
+            -p 5000:5000 -v {{ dir_bundle_staging }}:/var/lib/registry:z \
+              {{ registry_container_image }}
 
         - name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
           shell: > 
             jq -c --argjson \
-              var "$(jq .auths {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json)" \
-              '.auths += $var' {{ ocp_registry_pull_secret_file }} \ 
-              | jq '.' > {{ dir_bundle_staging }}/ocp-registry.json
+              var "$(jq .auths {{ registry_auth_config }})" \
+              '.auths += $var' {{ operator_registry_pull_secret_file }} \ 
+              | jq '.' > {{ dir_bundle_staging }}/operators-registry.json
 
         - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
           command: > 
-            oc adm catalog mirror localhost:5000/{{ source_repository | d('redhat') }}/{{ source_operator_index | d('redhat-operator-index') }}:{{ source_operator_index_tag | d('v4.6') }} \
+            oc adm catalog mirror \
+              localhost:5000/{{ source_operators_repository }}/{{ source_operator_index }}:{{ source_operator_index_tag }} \
              {{ registry_host_fqdn }}:{{ registry_host_port }}/{{ local_olm_repository }} \
-            -a {{ dir_bundle_staging }}/operators-registry.json \
-             --filter-by-os="linux/amd64" \
-             --insecure=true
+              -a {{ dir_bundle_staging }}/operators-registry.json \
+              --filter-by-os="linux/amd64" \
+              --insecure=true
           when:
             - authfile_created is defined
           register: registry_loaded
