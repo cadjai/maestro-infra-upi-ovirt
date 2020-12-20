@@ -3,7 +3,7 @@
   hosts: localhost 
   become: yes
   vars_files:
-    - 'vars/vault.yml'
+    - 'vars/vault.yml.claude'
     - 'vars/global.yml'
   vars:
     module: "registry"
@@ -64,9 +64,6 @@
         - name: '{{ ansible_name_module }} | set_fact | registry image files load facts '
           set_fact:
             local_registry_dir: "{{ dir_bundle_staging }}/docker/registry/v2"
-          when:
-            - op_unbundle_out is defined
-            - not op_unbundle_out.failed | d(false) | bool
 
         - name: '{{ ansible_name_module }} | command | generate authfile for registry'
           no_log: true
@@ -75,6 +72,13 @@
                --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
                {{ registry_host_fqdn }}:{{ registry_host_port }}
           register: authfile_created
+
+        - name: '{{ ansible_name_module }} | set_fact |  authfile for registry'
+          set_fact:
+            registry_auth_config: "{{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json"
+          when:
+            - authfile_created is defined
+
 
         - name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
           shell: > 
@@ -85,10 +89,11 @@
 
         - name: '{{ ansible_name_module }} | command:oc adm | load images to registry '
           command: > 
-            oc adm release mirror {{ ocp_release_version }} --from-dir={{ local_registry_dir }} \
-               --registry-config={{ dir_bundle_staging }}/ocp-registry.json \
-               --to {{ registry_host_fqdn }}:{{ registry_host_port}}/{{ local_repository }} \
-               --apply-release-image-signature=false 
+            oc adm catalog mirror localhost:5000/{{ source_repository | d('redhat') }}/{{ source_operator_index | d('redhat-operator-index') }}:{{ source_operator_index_tag | d('v4.6') }} \
+             {{ registry_host_fqdn }}:{{ registry_host_port }}/{{ local_olm_repository }} \
+            -a {{ dir_bundle_staging }}/operators-registry.json \
+             --filter-by-os="linux/amd64" \
+             --insecure=true
           when:
             - authfile_created is defined
           register: registry_loaded
