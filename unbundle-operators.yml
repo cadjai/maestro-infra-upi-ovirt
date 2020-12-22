@@ -96,6 +96,18 @@
                {{ registry_host_fqdn }}:{{ registry_host_port }}
           register: authfile_created
 
+        - name: '{{ ansible_name_module }} | stat | check if source secret is included in bundle'
+          stat:
+            path: "{{ dir_bundle_staging }}/source-operators-pull-secret.json"
+          register: source_pullsecret_check
+
+        - name: '{{ ansible_name_module }} | set_fact |  operator_registry_pull_secret_file if undefined'
+          set_fact:
+            operator_registry_pull_secret_file: "{{ dir_bundle_staging }}/source-operators-pull-secret.json"
+          when:
+            - not operator_registry_pull_secret_file is defined or (operator_registry_pull_secret_file == "")
+            - source_pullsecret_check.stat.exists
+
         - name: '{{ ansible_name_module }} | set_fact |  authfile for registry'
           set_fact:
             registry_auth_config: "{{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json"
