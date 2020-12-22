@@ -30,6 +30,13 @@
       set_fact:
         default_operator_registry_auth_config: "{{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/oprconfig.json"
 
+    - name: '{{ ansible_name_module }} | copy | copy source operator auth file to bundle location '
+      copy:
+        dest: "{{ registry_container_dir }}/source-operators-pull-secret.json"
+        remote_src: true
+        src: "{{ default_operator_registry_auth_config }}"
+        force: true
+
     - name: '{{ ansible_name_module }} | podman:run | Start registry container '
       command: podman run -d --name {{ registry_container_name }} \
         -p 5000:5000 -v {{ registry_container_dir }}:/var/lib/registry:z \
@@ -169,7 +176,6 @@
 
     - name: '{{ ansible_name_module }} | push original operator index image bundle '
       block:
-
         - name: '{{ ansible_name_module }} | Mirror operator catalog | oc:adm:catalog:mirror'
           command: >
             oc image mirror  \
@@ -219,7 +225,6 @@
           when:
             - item.key is defined and item.key != ""
             - item.value.source is defined and item.value.source != ""
-              #- item.value.source.split('/')[0] not in default_operator_registry 
 
         - name: '{{ ansible_name_module }} | set_fact |  authfile for operator registries'
           set_fact:
@@ -239,22 +244,27 @@
             - item.value.source is defined and item.value.source != ""
           register: catalog_mirrored
 
-          #- name: '{{ ansible_name_module }} | Mirror operator catalog | oc:adm:catalog:mirror'
-          #  command: >
-          #    oc adm catalog mirror localhost:5000/{{ item.value.source.split('/')[1] }}/{{ item.value.source.split('/')[2] }} \
-          #    file://{{ dir_bundle_staging }} \
-          #    -a {{ operators_registries_auth_config }} \
-          #     --filter-by-os="linux/amd64" \
-          #     --insecure=true
-          #  with_dict:
-          #    - "{{ operator_registres_to_mirror }}"
-          #  when:
-          #    - item.key is defined and item.key != ""
-          #    - item.value.source is defined and item.value.source != ""
-          #  register: catalog_mirrored
+    - name: '{{ ansible_name_module }} | mirror registry container if needed '
+      when:
+        - mirror_registry_container is defined
+        - mirror_registry_container | bool 
+      block:
+        - name: '{{ ansible_name_module }} | podman:tag | tag container image registry image'
+          command: >
+            podman tag {{ registry_container_image }} \
+            localhost:5000/{{ registry_container_image.split('/')[1] }}/{{ registry_container_image.split('/')[2] }} 
+
+        - name: '{{ ansible_name_module }} | podman:push | push container image registry image'
+          command: >
+            podman push --tls-verify=false \
+            localhost:5000/{{ registry_container_image.split('/')[1] }}/{{ registry_container_image.split('/')[2] }} 
+
+        - name: '{{ ansible_name_module }} | podman:save | save container image registry image'
+          shell: >
+            podman save > {{ registry_container_dir }}/'container-registry-image.tar' \
+            localhost:5000/{{ registry_container_image.split('/')[1] }}/{{ registry_container_image.split('/')[2] }}
 
     - name: '{{ ansible_name_module }} | archive:xz | create operator image bundle '
-      #-C {{ dir_bundle_staging }} . 
       become: yes
       command: > 
         tar -c --use-compress-program='pigz -9' -v \
