@@ -164,3 +164,5 @@ local_olm_repository: 'olm-mirror-new'
 source_operators_repository: 'redhat'
 source_operator_index: 'redhat-operator-index'
 source_operator_index_tag: 'v4.6'
+mirror_registry_container: true
+operator_registry_pull_secret_file: 'files/operators-pull-secret.json'
