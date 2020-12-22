@@ -65,6 +65,29 @@
           set_fact:
             local_registry_dir: "{{ dir_bundle_staging }}/docker/registry/v2"
 
+        - name: '{{ ansible_name_module }} | command:podman:load | load'
+          command: podman load -i {{ dir_bundle_staging }}/container-registry-image.tar
+          register: registry_container_loaded
+
+        - name: '{{ ansible_name_module }} | set_fact | Set loaded registry container image name '
+          set_fact:
+            temp_container_registry_image: "{{ registry_container_loaded.stdout.split(' ')[2] }}"
+          when:
+            - registry_container_loaded is defined
+            - registry_container_loaded.rc == 0
+            - not registry_container_loaded.failed | bool
+            - registry_container_loaded is defined
+            - registry_container_loaded.stdout != ""
+              
+        - name: '{{ ansible_name_module }} | podman:run | Start registry container '
+          command: >
+            podman run -d --name {{ registry_container_name }} \
+            -p 5000:5000 -v {{ dir_bundle_staging }}:/var/lib/registry:z \
+            {{ temp_container_registry_image }}
+          when:
+            - temp_container_registry_image is defined
+            - temp_container_registry_image != ""
+
         - name: '{{ ansible_name_module }} | command | generate authfile for registry'
           no_log: true
           command: > 
@@ -78,11 +101,6 @@
             registry_auth_config: "{{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json"
           when:
             - authfile_created is defined
-
-        - name: '{{ ansible_name_module }} | podman:run | Start registry container '
-          command: podman run -d --name {{ registry_container_name }} \
-            -p 5000:5000 -v {{ dir_bundle_staging }}:/var/lib/registry:z \
-              {{ registry_container_image }}
 
         - name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
           shell: > 
@@ -103,13 +121,17 @@
             - authfile_created is defined
           register: registry_loaded
 
-        - name: '{{ ansible_name_module }} | file:absent | bundles staging directories'
-          file:
-            state: absent 
-            path: "{{ item }}"
-          with_items: 
-            - "{{ dir_bundle_staging }}"
-          when:
-            - registry_loaded is defined
-            - registry_loaded.changed | bool
-            - not registry_loaded.failed | bool
+  post_tasks:
+    - name: '{{ ansible_name_module }} | podman:rm | Remove mirror-registry '
+      command: podman rm -f {{ registry_container_name | d('mirror-registry') }}
+
+    - name: '{{ ansible_name_module }} | file:absent | bundles staging directories'
+      file:
+        state: absent 
+        path: "{{ item }}"
+      with_items: 
+        - "{{ dir_bundle_staging }}"
+      when:
+        - registry_loaded is defined
+        - registry_loaded.changed | bool
+        - not registry_loaded.failed | bool
