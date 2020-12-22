@@ -245,9 +245,6 @@
           register: catalog_mirrored
 
     - name: '{{ ansible_name_module }} | mirror registry container if needed '
-      when:
-        - mirror_registry_container is defined
-        - mirror_registry_container | bool 
       block:
         - name: '{{ ansible_name_module }} | podman:tag | tag container image registry image'
           command: >
