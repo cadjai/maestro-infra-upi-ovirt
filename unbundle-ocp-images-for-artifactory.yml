@@ -5,7 +5,7 @@
   vars_files:
     - 'vars/global.yml'
   vars:
-    module: "registry"
+    module: "unbundle images for artifactory"
     ansible_name_module: " Konductor | Unbundle Images | {{ module }}"
     bundle_file_location: "/data/bundle/artifactory/artifactory-bundle.tar.xz"
     dir_bundle_staging: "/tmp/bundles"
