@@ -8,6 +8,8 @@
     module: "unbundle operator"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
     dir_bundle_location: "/data/bundle"
+    bundle_file_location: "/data/bundle/operators-bundle.tar.xz"
+    registry_container_name: "mirror-registry"
     dir_bundle_staging: "/tmp/bundles"
     process_operator_bundle: "true"
 
