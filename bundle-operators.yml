@@ -244,7 +244,7 @@
             - item.value.source is defined and item.value.source != ""
           register: catalog_mirrored
 
-    - name: '{{ ansible_name_module }} | mirror registry container if needed '
+    - name: '{{ ansible_name_module }} | mirror registry container '
       block:
         - name: '{{ ansible_name_module }} | podman:tag | tag container image registry image'
           command: >
