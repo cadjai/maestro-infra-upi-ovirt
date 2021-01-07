@@ -1,0 +1,52 @@
+#!/usr/bin/ansible-playbook --inventory=inventory
+- name: "Konductor | Provision UPI Infra | config-local-terraform-provider.yml"
+  hosts: local
+  vars_files:
+    - 'vars/vault.yml'
+    - 'vars/global.yml'
+  vars:
+    module: "terraform-provider-local"
+    install_terraform: "true"
+    terraform_client_binary: "/tmp/terraform-provider-ovirt"
+    terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
+    terraform_provider_config_file: "{{ local_home }}/.terraformrc"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+  tasks:
+
+    - name: '{{ ansible_name_module }} | copy | terraform provider binary to bastion'
+      when:
+        - install_terraform is defined
+        - install_terraform | bool
+      block:
+        - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform directory exist '
+          file:
+            path: "{{ terraform_provider_dir }}"
+            state: directory
+            recurse: true
+
+        - name: '{{ ansible_name_module }} | copy | terraform client to bastion'
+          copy:
+            src: "{{ terraform_client_binary }}"
+            dest: "{{ terraform_provider_dir }}"
+            remote_src: true
+            force: yes
+          register: terraform_client_copied
+
+        - name: '{{ ansible_name_module }} | template | create terraformrc file'
+          template:
+            src: "templates/terraform/terraformrc.j2"
+            dest: "{{ terraform_provider_config_file }}"
+            force: yes
+
+        - name: '{{ ansible_name_module }} | template | create terraform provider file'
+          template:
+            src: "templates/terraform/provider-local.j2"
+            dest: "{{ terraform_provider_dir }}/main.tf"
+            mode: 0755
+            force: yes
+
+        - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform provider module'
+          shell:
+            cmd: terraform init
+            chdir: "{{ terraform_provider_dir }}"
+          register: terraform_init
