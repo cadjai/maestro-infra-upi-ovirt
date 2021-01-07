@@ -29,6 +29,7 @@
             src: "{{ terraform_client_binary }}"
             dest: "{{ terraform_provider_dir }}"
             remote_src: true
+            mode: 0755
             force: yes
           register: terraform_client_copied
 
