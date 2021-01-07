@@ -31,6 +31,7 @@
     static_inventory_file: "inventory-cluster"
     
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
   roles:
     - { role: setup-terraform-module, vm_template_id: "{{ coreos_vm_template_id if coreos_vm_template_id is defined and coreos_vm_template_id != '' else generated_coreos_template_id }}", create_cluster_inventory: "true" }
