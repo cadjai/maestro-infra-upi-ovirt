@@ -1,5 +1,5 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
-- name: 'RedHat | Konductor | provision-cluster.yml'
+- name: 'RedHat | Konductor | provision-compute-nodes-post-clusterbootstrap.yml'
   hosts: localhost
   vars_files:
     - vars/global.yml
