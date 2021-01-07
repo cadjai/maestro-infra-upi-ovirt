@@ -12,6 +12,14 @@
   shell:
     cmd: "cat {{ registra_ca_local_dir }}/{{ registry_ca_local_name }} | grep -v CERTIFICATE | tr -d '\n'"
   register: registry_ca_cert
+
+- name: '{{ ansible_name_module }} | podman:login | Login to private container registry'
+  no_log: true
+  command: >
+    podman login -u {{ registry_admin_username }} \
+    -p {{ registry_admin_password }} \
+     --authfile {{ hostvars[inventory_hostname].ansible_env.HOME }}/.docker/config.json \
+     {{ registry_host_fqdn }}:{{ registry_host_port }}
  
 - name: '{{ ansible_name_module }} | jq | generate combined authfile for registry'
   shell: >
