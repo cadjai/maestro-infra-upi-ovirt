@@ -2,6 +2,7 @@
 - name: 'RedHat | Konductor | provision-cluster.yml'
   hosts: localhost
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
   tasks:
     - set_fact:

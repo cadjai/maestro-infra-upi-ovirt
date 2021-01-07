@@ -4,6 +4,7 @@
   vars_files:
    # - '../cluster-vars.yml'
    # - 'vars/{{ target_environment }}.yml'
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "ignition"

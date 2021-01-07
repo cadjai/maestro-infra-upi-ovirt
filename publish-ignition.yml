@@ -3,6 +3,7 @@
   hosts: "{{ nginx_hosts | default(groups.newregistry) }}"
   become: yes
   vars_files:
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "registry"
@@ -12,8 +13,18 @@
     - name: '{{ ansible_name_module }} | file:absent | remove existing ignition files from web server '
       shell: "rm -f {{ nginx_root_directory }}/{{ ign_repos_name }}/*"
 
+    - name: '{{ ansible_name_module }} | file:absent | ensure directory still exist'
+      file:
+        path: "{{ nginx_root_directory }}/{{ ign_repos_name }}"
+        state: directory
+        mode: 0755
+
     - name: '{{ ansible_name_module }} | file:absent | list directory from web server '
-      command: "ls -la {{ nginx_root_directory }}/{{ ign_repos_name }}/"
+      shell: "ls -la {{ nginx_root_directory }}/{{ ign_repos_name }}/"
+      failed_when:
+        - no_ign_config.rc > 0
+        - not 'cannot access' in no_ign_config.stderr
+      register: no_ign_config
 
     - name: '{{ ansible_name_module }} | copy ignition files to web server '
       copy:
