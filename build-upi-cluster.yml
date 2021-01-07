@@ -14,6 +14,7 @@
     instance_inventory_file: "cluster"
     instance_role_groups: "{{ ['bootstrap','masters','workers'] }}"
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
 
   roles:

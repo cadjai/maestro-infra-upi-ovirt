@@ -15,6 +15,7 @@
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }} | {{ instance_type }}"
     
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
   tasks:
     - name: '{{ ansible_name_module }} | import_role | RHCOS Template provision setup'

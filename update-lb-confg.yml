@@ -3,6 +3,7 @@
   hosts: newlb
   become: true
   vars_files:
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "update-loadbalancer-config"
