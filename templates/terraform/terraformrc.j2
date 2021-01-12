@@ -1,10 +1,10 @@
 provider_installation {
   filesystem_mirror {
     path    = "{{ terraform_provider_dir }}"
-    include = ["hashicorp/terraform-provider-ovirt"]
+    include = ["hashicorp/{{ terraform_provider_full_name }}"]
   }
   direct {
-    exclude = ["hashicorp/ovirt"]
+    exclude = ["hashicorp/{{ terraform_provider_full_name.split('-')[2] }}"]
   }
 }
 plugin_cache_dir = "$HOME/.terraform.d/plugin-cache"
