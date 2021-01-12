@@ -10,6 +10,7 @@
     terraform_client_binary: "/tmp/terraform-provider-ovirt"
     terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
     terraform_provider_config_file: "{{ local_home }}/.terraformrc"
+    terraform_provider_full_name: "terraform-provider-ovirt"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
   tasks:
 
@@ -41,7 +42,7 @@
 
         - name: '{{ ansible_name_module }} | template | create terraform provider file'
           template:
-            src: "templates/terraform/provider-local.j2"
+            src: "templates/terraform/provider-local-{{ terraform_provider_full_name.split('-')[2] }}.j2"
             dest: "{{ terraform_provider_dir }}/main.tf"
             mode: 0755
             force: yes
