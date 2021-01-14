@@ -1,0 +1,5 @@
+terraform {
+  backend "local" {
+    path = "{{ tf_module_path }}/{{ module }}.tfstate"
+  }
+}
