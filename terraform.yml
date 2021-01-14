@@ -43,7 +43,7 @@
         cmd: terraform init
         chdir: "{{ item.dest }}"
       with_items:
-        - "{{ terraformrepos | default(dir_terraform) }}"
+        - "{{ terraformrepos | default(terraform_provider_dir) }}"
       when:
         - terraform_installed is defined
         - terraform_installed.changed | bool
