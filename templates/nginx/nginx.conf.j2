@@ -48,6 +48,13 @@ http {
            autoindex on;
         }
 
+{% if host_rhel_images | d(false) | bool %}
+        location /{{ rhel_iso_repos_name | d('rhel-isos') }}/ {
+           autoindex on;
+        }
+
+{% endif %}
+
 {% if host_rhcos_images | d(false) | bool %}
         location /{{ ign_iso_repos_name | d('rhcos-isos') }}/ {
            autoindex on;

@@ -10,32 +10,35 @@
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
     host_rhcos_images: false
   tasks:
-    - name: '{{ ansible_name_module }} | file:absent | remove existing ignition files from web server '
-      shell: "rm -f {{ nginx_root_directory }}/{{ ign_repos_name }}/*"
+    - name: '{{ ansible_name_module }} | Process ignition files to host '
+      block:
+        - name: '{{ ansible_name_module }} | file:absent | remove existing ignition files from web server '
+          shell: "rm -f {{ nginx_root_directory }}/{{ ign_repos_name }}/*"
 
-    - name: '{{ ansible_name_module }} | file:absent | ensure directory still exist'
-      file:
-        path: "{{ nginx_root_directory }}/{{ ign_repos_name }}"
-        state: directory
-        mode: 0755
+        - name: '{{ ansible_name_module }} | file:absent | ensure directory still exist'
+          file:
+            path: "{{ nginx_root_directory }}/{{ ign_repos_name }}"
+            state: directory
+            mode: 0755
 
-    - name: '{{ ansible_name_module }} | file:absent | list directory from web server '
-      shell: "ls -la {{ nginx_root_directory }}/{{ ign_repos_name }}/"
-      failed_when:
-        - no_ign_config.rc > 0
-        - not 'cannot access' in no_ign_config.stderr
-      register: no_ign_config
+        - name: '{{ ansible_name_module }} | file:absent | list directory from web server '
+          shell: "ls -la {{ nginx_root_directory }}/{{ ign_repos_name }}/"
+          failed_when:
+            - no_ign_config.rc > 0
+            - not 'cannot access' in no_ign_config.stderr
+          register: no_ign_config
 
-    - name: '{{ ansible_name_module }} | copy ignition files to web server '
-      copy:
-        src: "{{ dir_deploy }}/nginx/{{ item }}"
-        dest: "{{ nginx_root_directory }}/{{ ign_repos_name }}/{{ item }}"
-        mode: 0777
-        force: yes
-      loop:
-        - bootstrap.ign
-        - master.ign
-        - worker.ign
+        - name: '{{ ansible_name_module }} | copy ignition files to web server '
+          copy:
+            src: "{{ dir_deploy }}/nginx/{{ item }}"
+            dest: "{{ nginx_root_directory }}/{{ ign_repos_name }}/{{ item }}"
+            mode: 0777
+            force: yes
+          loop:
+            - bootstrap.ign
+            - master.ign
+            - worker.ign
+              #tags: ign
 
     - name: '{{ ansible_name_module }} | Process RHCOS qcow2 images '
       when:
@@ -101,3 +104,40 @@
           loop: "{{ qcow2_files }}"
           when:
             - qcow2_files is defined
+              #tags: rhcos
+
+    - name: '{{ ansible_name_module }} | Process RHEL qcow2 images '
+      when:
+        - host_rhel_images is defined
+        - host_rhel_images | bool 
+      block:
+        - name: '{{ ansible_name_module }} | file |  rhel-isos '
+          file:
+            path: "{{ nginx_root_directory }}/{{ rhel_iso_repos_name }}"
+            state: directory
+            mode: 755
+
+        - name: '{{ ansible_name_module }} | template |  nginx.conf '
+          template:
+            src: "templates/nginx/nginx.conf.j2"
+            dest: "{{ nginx_conf }}"
+            mode: '755'
+            backup: yes
+
+        - name: '{{ ansible_name_module }} | shell:systemctl list-unit-file | get nginx service name '
+          shell: "systemctl list-unit-files | grep rh-nginx116 | awk '{print $1}'"
+          register: nginx_service
+
+        - name: '{{ ansible_name_module }} | Ensure Nginx Service is restarted '
+          systemd:
+            name: "{{ nginx_service.stdout }}"
+            state: restarted
+
+        - name: '{{ ansible_name_module }} | copy image files to web server '
+          copy:
+            src: "{{ dir_deploy }}/nginx-images/{{ item }}"
+            dest: "{{ nginx_root_directory }}/{{ rhel_iso_repos_name }}/{{ item }}"
+            mode: 0777
+            force: yes
+          loop: "{{ rhel_image_iso_names }}"
+      tags: rhel

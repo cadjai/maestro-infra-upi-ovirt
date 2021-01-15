@@ -19,6 +19,7 @@
     search_dir_suffix: "node-search"
     instance_file_suffix: "-search"
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
   roles:
     - { role: setup-terraform-module, search_vms: 'true' }
