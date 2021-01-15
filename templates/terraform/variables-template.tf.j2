@@ -7,8 +7,8 @@ variable "create_template" {
   type = bool 
   default = "false"
 }
-variable "rhcos_template_name" { default = ""}
-variable "rhcos_image_url" { default = ""}
+variable "{{ template_type }}_template_name" { default = ""}
+variable "{{ template_type }}_image_url" { default = ""}
 variable "disk_format" { default =  "cow" }
 variable "sparse" { default =  "true" }
 variable "shareable" { default =  "false" }
