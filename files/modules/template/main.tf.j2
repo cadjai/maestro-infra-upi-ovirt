@@ -1,0 +1,68 @@
+
+data "ovirt_clusters" "clusters" {
+  search = {
+    criteria       = ""
+    case_sensitive = false
+  }
+}
+
+data "ovirt_vnic_profiles" "vnic_profiles" {
+  name_regex = "ovirtmgmt"
+  network_id = local.network_id
+}
+
+locals {
+     cluster	    	= [for c in data.ovirt_clusters.clusters.clusters : c if c.id == var.cluster_id][0]
+     network_id	    	= [for n in local.cluster.networks : n.id if n.name == "ovirtmgmt"][0]
+     vnic_profile_id	= data.ovirt_vnic_profiles.vnic_profiles.vnic_profiles.0.id
+     
+}
+
+resource "ovirt_image_transfer" "{{ template_type }}_release_image" {
+  source_url		= "${var.{{ template_type }}_image_url}"
+  storage_domain_id 	= "${var.storage_domain_id}"
+  sparse            	= "${var.sparse}"
+  alias			= "${var.{{ template_type }}_template_name}"
+}
+
+resource "ovirt_vm" "{{ template_type }}_tmp_vm" {
+  cluster_id		= "${var.cluster_id}"
+  name			= "{{ template_type }}_tmp_vm-${var.{{ template_type }}_template_name}"
+  block_device {
+    disk_id	= ovirt_image_transfer.{{ template_type }}_release_image.disk_id
+    interface	= "virtio_scsi"
+    size	= {{ template_disk_size | d('120',true) | int }}
+  }
+  auto_start 		= false
+  os {
+    type = "{{ template_type }}_x64"
+  }
+  nics {
+    name		= "nic1"
+    vnic_profile_id	= local.vnic_profile_id
+  }
+  depends_on 		= [ovirt_image_transfer.{{ template_type }}_release_image]
+}
+
+data "ovirt_vms" "{{ template_type }}_tmp_vm_vms" {
+  search = {
+    criteria       = "name={{ template_type }}_tmp_vm-${var.{{ template_type }}_template_name}"
+    case_sensitive = true
+  }
+  depends_on 		= [ovirt_vm.{{ template_type }}_tmp_vm]
+}
+
+resource "ovirt_template" "{{ template_type }}_tmp_template" {
+  count			= var.create_template ? 1 : 0
+  name			= "${var.{{ template_type }}_template_name}"  
+  cluster_id		= "${var.cluster_id}"
+  vm_id			= ovirt_vm.{{ template_type }}_tmp_vm.id
+}
+
+data "ovirt_templates" "{{ template_type }}_tmp_templates" {
+  search = {
+    criteria       = "name=${var.{{ template_type }}_template_name}"
+    case_sensitive = true
+  }
+  depends_on 		= [ovirt_template.{{ template_type }}_tmp_template]
+}

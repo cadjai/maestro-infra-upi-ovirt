@@ -1,0 +1,34 @@
+---
+# tasks file for setup-terraform-module
+
+####### Stage Terraform ovirt config for {{ template_type | upper }} Template if necessary 
+- name: '{{ ansible_name_module }} | file | Create directories | {{ template_type | upper }} Template'
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+    - "{{ tf_module_path }}"
+    - "{{ tf_module_path }}/modules/template"
+
+- name: '{{ ansible_name_module }} | copy | Terraform Ovirt Modules {{ template_type | upper }} Template'
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { mode: '755', name: "files/modules/template/main.tf.j2", dest: "{{ tf_module_path }}/modules/template/main.tf"}
+    - { mode: '755', name: "files/modules/template/outputs.tf.j2", dest: "{{ tf_module_path }}/modules/template/outputs.tf"}
+    - { mode: '755', name: "files/modules/template/variables.tf.j2", dest: "{{ tf_module_path }}/modules/template/variables.tf"}
+
+- name: '{{ ansible_name_module }} | template | Terraform Ovirt Provider {{ template_type | upper }} Template Vars '
+  template:
+    src: "{{ item.name }}"
+    dest: "{{ item.dest }}"
+    mode: "{{ item.mode }}"
+  loop:
+    - { mode: '755', name: "templates/terraform/provider.tf.j2", dest: "{{ tf_module_path }}/provider.tf"}
+    - { mode: '755', name: "templates/terraform/local.tfstate.j2", dest: "{{ tf_module_path }}/local.tfstate"}
+    - { mode: '755', name: "templates/terraform/variables-template.tf.j2", dest: "{{ tf_module_path }}/variables.tf"}
+    - { mode: '755', name: "templates/terraform/template.auto.tfvars.j2", dest: "{{ tf_module_path }}/template.auto.tfvars"}
+    - { mode: '755', name: "templates/terraform/template.tf.j2", dest: "{{ tf_module_path }}/template.tf"}
+

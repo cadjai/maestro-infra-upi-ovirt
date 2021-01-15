@@ -1,0 +1,42 @@
+---
+# tasks file for build-upi-infra-resources
+####### Terraform Init
+- name: '{{ ansible_name_module }} | shell | terraform init | {{ template_type | upper }} Template'
+  shell: terraform init
+  args:
+    chdir: "{{ tf_module_path }}"
+  with_items:
+    - "{{ tf_module_path }}"
+
+####### Terraform Apply
+- name: '{{ ansible_name_module }} | command | terraform | apply | {{ template_type | upper }} Template'
+  shell: terraform apply -auto-approve 
+  args:
+    chdir: "{{ tf_module_path }}"
+  with_items:
+    - "{{ tf_module_path }}"
+  register: tf_apply
+
+- name: '{{ ansible_name_module }} | These steps can only be performed if the previous is successful'
+  when:
+    - tf_apply.results[0].rc is defined
+    - tf_apply.results[0].rc == 0
+  block:
+    - name: '{{ ansible_name_module }} | set_fact | Load terraform state files'
+      set_fact:
+        statefiles: "{{ lookup('file', tf_module_path + '/terraform.tfstate') }}"
+      register: statefiles_set
+    
+    - name: '{{ ansible_name_module }} | set_fact | template_id and template_name from json file '
+      set_fact:
+        template_ids: "{{ statefiles_set | json_query(idquery) }}"
+        template_names: "{{ statefiles_set | json_query(namequery) }}"
+      vars:
+        idquery: "ansible_facts.statefiles.resources[?type=='ovirt_templates'].instances[0].attributes.templates[0].id"
+        namequery: "ansible_facts.statefiles.resources[?type=='ovirt_templates'].instances[0].attributes.templates[0].name"
+      register: statejdata_out
+
+    - name: '{{ ansible_name_module }} | set_fact | final template_id and template_name facts '
+      set_fact:
+        generated_coreos_template_id: "{{ template_ids[0] | quote }}"
+        generated_coreos_template_name: "{{ template_names[0] | quote }}"

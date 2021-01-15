@@ -1,0 +1,10 @@
+
+module "{{ template_type }}_template" {
+  source		= "./modules/template"
+  cluster_id		= var.cluster_id
+  storage_domain_id     = var.storage_domain_id
+  create_template	= var.create_template
+  {{ template_type }}_image_url	= var.{{ template_type }}_image_url
+  {{ template_type }}_template_name	= var.{{ template_type }}_template_name
+  disk_format           = var.disk_format
+} 

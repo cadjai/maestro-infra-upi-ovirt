@@ -1,0 +1,20 @@
+{% if coreos_vm_template_id | d('') or create_rhcos_template | d(false) | bool %}
+ovirt_url = "{{ ovirt_url }}"
+ovirt_username = "{{ ovirt_username }}"
+ovirt_password = "{{ ovirt_password }}"
+storage_domain_id = "{{ storage_domain_id }}"
+cluster_id = "{{ cluster_id }}"
+create_template = true 
+rhcos_template_name = "{{ rhcos_template_name | d(ocp_cluster_name + '-rhcos-template') }}-{{ (99 | random(1,2)) }}"
+rhcos_image_url = "{{ rhcos_image_url }}"
+{% endif %}
+{% if rhel_vm_template_id | d('') or create_rhel_template | d(false) | bool %}
+ovirt_url = "{{ ovirt_url }}"
+ovirt_username = "{{ ovirt_username }}"
+ovirt_password = "{{ ovirt_password }}"
+storage_domain_id = "{{ storage_domain_id }}"
+cluster_id = "{{ cluster_id }}"
+create_template = true
+rhel_template_name = "{{ rhel_template_name }}-{{ (99 | random(1,2)) }}"
+rhel_image_url = "{{ rhel_image_url }}"
+{% endif %}

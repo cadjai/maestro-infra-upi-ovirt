@@ -1,0 +1,9 @@
+output "{{ template_type }}_template_id" {
+  description = "VM Template ID"
+  value     = data.ovirt_templates.{{ template_type }}_tmp_templates.templates.0.id
+}
+
+output "{{ template_type }}_template_vm_id" {
+  description = "{{ template_type | upper }} VM ID"
+  value     = { for k,v in data.ovirt_vms.{{ template_type }}_tmp_vm_vms.vms : k => v.id } 
+}
