@@ -8,6 +8,7 @@
     tf_module_path: "{{ dir_terraform }}/{{ module }}/{{ instance_type }}"
     ansible_name_module: " Konductor | Provision UPI Cluster Nodes | {{ module }} | {{ instance_type }}"
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
 
   tasks:
