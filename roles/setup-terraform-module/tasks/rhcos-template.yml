@@ -23,7 +23,7 @@
   loop:
     - { mode: '755', name: "templates/terraform/provider.tf.j2", dest: "{{ tf_module_path }}/provider.tf"}
     - { mode: '755', name: "templates/terraform/local.tfstate.j2", dest: "{{ tf_module_path }}/local.tfstate"}
-    - { mode: '755', name: "templates/terraform/variables-template.tf.j2", dest: "{{ tf_module_path }}/variables.tf"}
+    - { mode: '755', name: "templates/terraform/variables-rhcos-template.tf.j2", dest: "{{ tf_module_path }}/variables.tf"}
     - { mode: '755', name: "templates/terraform/rhcos-template.auto.tfvars.j2", dest: "{{ tf_module_path }}/rhcos-template.auto.tfvars"}
     - { mode: '755', name: "templates/terraform/rhcos-template.tf.j2", dest: "{{ tf_module_path }}/rhcos-template.tf"}
 

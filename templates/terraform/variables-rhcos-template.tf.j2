@@ -1,0 +1,14 @@
+variable "ovirt_url" { default =  "" }
+variable "ovirt_username" { default =  "" }
+variable "ovirt_password" { default =  "" }
+variable "storage_domain_id" { default =  "" }
+variable "cluster_id" { default =  "" }
+variable "create_template" { 
+  type = bool 
+  default = "false"
+}
+variable "rhcos_template_name" { default = ""}
+variable "rhcos_image_url" { default = ""}
+variable "disk_format" { default =  "cow" }
+variable "sparse" { default =  "true" }
+variable "shareable" { default =  "false" }
