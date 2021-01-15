@@ -1,0 +1,7 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Konductor | provision-rhcos-template.yml'
+  hosts: localhost
+
+- import_playbook: setup-rhel-template.yml   # Setup Terraform to provision UPI cluster resources RHEL Template
+- import_playbook: build-upi-rhel-template.yml   # Use terraform to provision RHEL template
+  
