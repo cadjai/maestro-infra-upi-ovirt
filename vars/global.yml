@@ -79,6 +79,8 @@ sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
 # Repo Config
 use_statellite: false
 satellite_server: ''
+repo_server: ''
+generate_repo_file: 'false'
 yum_repo_file: 'files/yum.repo'
 
 # DNS Client Config
@@ -123,17 +125,17 @@ registry_ca_local_name: "registry-ca.crt"
 ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
 ocp_master_count: 3
 ocp_worker_count: 2
-rhcos_template_image_name: "rhcos-live.x86_64.iso"
-#rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
+rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
 rhcos_image_version_major: "4.6"
 rhcos_image_version_minor: "latest"
 rhcos_image_iso_names: 
   - "rhcos-openstack.x86_64.qcow2.gz"
   - "rhcos-live.x86_64.iso"
-rhcos_image_url: "http://{{ nginx_hosts[0] | d(groups.newregistry[0]) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
-create_rhcos_template: false
-#create_rhcos_template: true
+#rhcos_image_url: "{{ dir_deploy }}/nginx-images/{{ rhcos_template_image_name }}"
+rhcos_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
+#create_rhcos_template: false
+create_rhcos_template: true
 #oc_client_binary: "files/oc.tar.gz"
 oc_client_binary: "files/openshift-client-linux-4.6.4.tar.gz"
 ocp_release_version: 4.6.4
@@ -170,12 +172,17 @@ terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
 terraform_provider_config_file: "{{ local_home }}/.terraformrc"
 
 ### RHEL Template variables  ###
-host_rhel_images: false
+host_rhel_images: true
 rhel_iso_repos_name: 'rhel-isos'
-rhel_template_image_name: 'rhel-server-7.9-x86_64-kvm.qcow2'
-rhel_template_name: 'rhel7-sever-template'
+### Only qcow2 images seems to work with rhev template provisioning
+#rhel_template_image_name: 'rhel-server-7.9-x86_64-kvm.qcow2'
+rhel_template_image_name: 'rhel-8.3-x86_64-kvm.qcow2'
+#rhel_template_name: 'rhel7-sever-template'
+rhel_template_name: 'rhel8-sever-template'
 rhel_image_iso_names: 
   - "rhel-server-7.9-x86_64-kvm.qcow2"
   - "rhel-8.3-x86_64-kvm.qcow2"
-rhel_image_url: "http://{{ nginx_hosts[0] | d(groups.newregistry[0]) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
-create_rhel_template: false
+#rhel_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
+rhel_image_url: "{{ dir_deploy }}/nginx-images/{{ rhel_template_image_name }}"
+create_rhel_template: true
+
