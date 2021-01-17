@@ -4,6 +4,12 @@
   gather_facts: no
   tasks:
     - setup:
+    - name: "ovirt | ensure that the RHEL template id to use exist"
+      fail:
+        msg: "The variable vm_template_id or generated_template_id cannot be undefined"
+      when:
+        - vm_template_id is not defined or vm_template_id == ''
+        - generated_template_id is not defined or generated_template_id == ''
 
 - name: ' Konductor | Provision UPI Infra | Build Ovirt Nodes'
   hosts: localhost
@@ -18,6 +24,7 @@
     instance_dir_suffix: "-node-search"
     search_dir_suffix: "node-search"
     instance_file_suffix: "-search"
+    vm_template_id: "{{ generated_template_id | default(vm_template_id, true) }}"
   vars_files:
     - vars/vault.yml
     - vars/global.yml
