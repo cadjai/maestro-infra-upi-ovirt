@@ -1,6 +1,19 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
 - name: 'RedHat | Konductor | provision-infra.yml'
   hosts: localhost
+  vars_files:
+    - vars/vault.yml
+    - vars/global.yml
+  tasks:
+    - set_fact:
+        create_rhel_template: "{{ create_rhel_template | d(omit)}}"
+        vm_template_id: "{{ vm_template_id | d('') }}"
+      delegate_to: localhost
+      delegate_facts: yes
+
+- import_playbook: provision-rhel-template.yml     # Provision UPI infra nodes
+  when:
+    - (create_rhel_template is defined and create_rhel_template | bool) or vm_template_id is not defined or (vm_template_id is defined and vm_template_id == '' )
 
 - import_playbook: setup-infra-resources.yml        # Configure Terraform modules for the UPI infra nodes
 - import_playbook: build-upi-infra.yml        # Run Terraform commands to provision UPI infra nodes
