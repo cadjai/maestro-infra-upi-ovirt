@@ -36,7 +36,18 @@
         namequery: "ansible_facts.statefiles.resources[?type=='ovirt_templates'].instances[0].attributes.templates[0].name"
       register: statejdata_out
 
-    - name: '{{ ansible_name_module }} | set_fact | final template_id and template_name facts '
+    - name: '{{ ansible_name_module }} | set_fact | final {{ template_type | upper }} template_id and template_name facts '
       set_fact:
         generated_coreos_template_id: "{{ template_ids[0] | quote }}"
+        coreos_vm_template_id: "{{ template_ids[0] | quote }}"
         generated_coreos_template_name: "{{ template_names[0] | quote }}"
+      when:
+        - template_type in 'rhcos'
+
+    - name: '{{ ansible_name_module }} | set_fact | final {{ template_type | upper }} template_id and template_name facts '
+      set_fact:
+        generated_template_id: "{{ template_ids[0] | quote }}"
+        vm_template_id: "{{ template_ids[0] | quote }}"
+        generated_template_name: "{{ template_names[0] | quote }}"
+      when:
+        - template_type in 'rhel'
