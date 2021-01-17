@@ -12,7 +12,7 @@
     - name: '{{ ansible_name_module }} | set_fact:repo file template '
       set_fact:
         repo_file_prefix: "rhel"
-        repo_file_suffix: "{{ ansible_distribution_version | default('7', true) }}.repo.j2"
+        repo_file_suffix: "{{ ansible_distribution_major_version | default('7', true) }}.repo.j2"
 
     - name: '{{ ansible_name_module }} | copy | repo file'
       template:
