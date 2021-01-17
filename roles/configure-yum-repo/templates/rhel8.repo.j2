@@ -1,0 +1,30 @@
+[rhel-8-for-x86_64-baseos-rpms]
+name="Red Hat Server 8 BaseOS RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-8-for-x86_64-baseos-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel-8-for-x86_64-appstream-rpms]
+name="Red Hat Server 8 AppStreams RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-8-for-x86_64-appstream-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel-8-for-x86_64-supplementary-rpms]
+name="Red Hat Server 8 Supplementary RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-8-for-x86_64-supplementary-rpms/
+enabled=1
+gpgcheck=0
+
+[ansible-2.9-for-rhel-8-x86_64-rpms]
+name="Red Hat Server 8 Ansible RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/ansible-2.9-for-rhel-8-x86_64-rpms/
+enabled=1
+gpgcheck=0
+
+[ocp-tools-4.6-for-rhel-8-x86_64-rpms]
+name="Red Hat Server 8 OCP Tools RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/ocp-tools-4.6-for-rhel-8-x86_64-rpms/
+enabled=1
+gpgcheck=0
+

@@ -1,0 +1,55 @@
+[ansible-rpms]
+name="Red Hat Server 7 Ansible"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-ansible-2.9-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-rpms]
+name="Red Hat Server 7 RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-rpms/
+enabled=1
+gpgcheck=0
+
+
+[rhel7-server-extras]
+name="Red Hat Server 7 Extras"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-extras-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-rhscl]
+name="Red Hat Server 7 RHSCL"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-server-rhscl-7-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-supplementary]
+name="Red Hat Server 7 Supplementary"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-supplementary-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-optional]
+name="Red Hat Server 7 Optional"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-optional-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-ocp-3.11-rpms]
+name="OCP 3.11 RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-ose-3.11-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-ocp-4.5-rpms]
+name="OCP 4.5 RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-ose-4.5-rpms/
+enabled=1
+gpgcheck=0
+
+[rhel7-server-rhv-4-mgmt-agent-rpms]
+name="RHV 4 Mgmt Agent RPMS"
+baseurl=http://{{ repo_server | d('localhost') }}/pub/repo/rhel-7-server-rhv-4-mgmt-agent-rpms/
+enabled=1
+gpgcheck=0
+

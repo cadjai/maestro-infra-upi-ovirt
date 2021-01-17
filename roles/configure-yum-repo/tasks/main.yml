@@ -3,18 +3,36 @@
 - name: '{{ ansible_name_module }} | Configure Yum Repo'
   when:
     - ( not use_satellite is defined or  (use_satellite is defined and not use_satellite | bool ))
-    - (yum_repo_file is defined and not yum_repo_file == "")
   block:
     - name: '{{ ansible_name_module }} | file:absent | repo file'
       file:
         path: "/etc/yum.repos.d/redhat.repo"
         state: absent
 
+    - name: '{{ ansible_name_module }} | set_fact:repo file template '
+      set_fact:
+        repo_file_prefix: "rhel"
+        repo_file_suffix: "{{ ansible_distribution_version | default('7', true) }}.repo.j2"
+
+    - name: '{{ ansible_name_module }} | copy | repo file'
+      template:
+        src: "{{ repo_file_prefix }}{{ repo_file_suffix }}"
+        dest: "/etc/yum.repos.d/{{ repo_file_prefix }}{{ repo_file_suffix.split('.j2')[0] }}"
+        backup: yes
+      when:
+        - generate_repo_file is defined 
+        - generate_repo_file | bool
+      register: repo_file_copied
+
     - name: '{{ ansible_name_module }} | copy | repo file'
       copy:
         src: "{{ yum_repo_file }}"
         dest: "/etc/yum.repos.d/{{ yum_repo_file | basename }}"
         backup: yes
+      when:
+        - not generate_repo_file is defined or generate_repo_file == '' 
+        - yum_repo_file is defined
+        - yum_repo_file != ''
       register: repo_file_copied
 
     - name: '{{ ansible_name_module }} | update repositories'
