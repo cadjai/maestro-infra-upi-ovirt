@@ -33,6 +33,7 @@ If this is being done in a disconnected environment ensure that the terraform ov
 You also need ansible and python installed on the bastion. 
 Most variables are defined in the vars/global.yml file but there are few that are defined as group variables for the various host groups you would like to create.  
 Take a look at the inventory/group_vars folder to see some sample. 
+The templates used to provison the necessary VMs (rhel or rhcos) need to be created based on a qcow2 image not an iso. When an iso is used an error is thrown by terraform and it fails to provision the vm. Note that there are playbooks that will help create these templates. All that is required is to either provide the qcow2 images or have the playbook download them.
 
 ### Playbooks
 To run the main playbook use the ansible-playbook command as follows   
