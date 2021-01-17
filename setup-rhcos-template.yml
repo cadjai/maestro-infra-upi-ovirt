@@ -5,11 +5,21 @@
   tasks:
     - setup:
 
+    - name: Assert that an engix host exists
+      assert:
+        that:
+          - "'nginx_hosts' in groups.keys() or 'newregistry' in groups.keys()"
+          - "(groups.newregistry is defined and groups.newregistry | length > 0) or (groups.nginx_hosts is defined and groups.nginx_hosts | length > 0)"
+        msg: "An nginx host is required. It can be an existing one if a new one is not being created."
+
 - name: ' Konductor | Provision UPI Infra | Build Ovirt Nodes'
   hosts: localhost
   vars:
     module: "ovirt"
-    instance_type: "cluster-resources-template"
+    instance_type: "rhcos-vm-template"
+    template_type: "rhcos"
+    template_disk_size: "120"
+    create_rhcos_template: true
     state_provider: "local"
     tf_module_path: "{{ dir_terraform }}/{{ module }}/{{ instance_type }}"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }} | {{ instance_type }}"
@@ -21,4 +31,4 @@
     - name: '{{ ansible_name_module }} | import_role | RHCOS Template provision setup'
       import_role:
         name:  setup-terraform-module
-        tasks_from: rhcos-template.yml
+        tasks_from: template.yml
