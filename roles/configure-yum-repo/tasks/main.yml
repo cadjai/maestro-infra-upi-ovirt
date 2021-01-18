@@ -22,6 +22,8 @@
       when:
         - generate_repo_file is defined 
         - generate_repo_file | bool
+        - repo_server is defined
+        - not repo_server == ""
       register: repo_file_copied
 
     - name: '{{ ansible_name_module }} | copy | repo file'
