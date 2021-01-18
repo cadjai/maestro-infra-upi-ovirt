@@ -20,10 +20,25 @@
 - import_playbook: yum-repo-config.yml        # Register the nodes with a yum repo server or satellite
 - import_playbook: dns-clients.yml    # Register all hosts with the dns if necessary
 - import_playbook: loadbalancer.yml        # Configure loadbalancer if necessary 
+  when:
+    - "'lb' in groups.keys()"
+    - "groups.lb | length > 0"
 - import_playbook: dhcp.yml     # Configure a DHCP host if necessary 
+  when:
+    - "'lb' in groups.keys()"
+    - "groups.lb | length > 0"
 - import_playbook: dns.yml   # Configure a DNS Host if necessary
+  when:
+    - "'dns' in groups.keys()"
+    - "groups.dns | length > 0"
 - import_playbook: registry.yml   # Configure a Registry host if necessary
+  when:
+    - "'registry' in groups.keys()"
+    - "groups.registry | length > 0"
 - import_playbook: nginx.yml   # Configure a web server on Registry host if necessary
+  when:
+    - "'nginx_hosts' in groups.keys() or 'newregistry' in groups.keys()"
+    - "(groups.newregistry is defined and groups.newregistry | length > 0) or (groups.newnginx_hosts is defined and groups.newnginx_hosts | length > 0)"
 - import_playbook: ignition.yml   # Generate and stage ignition config to be pushed to the host
 - import_playbook: publish-ignition.yml   # Publish ignition files to the web server host
 - import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces
