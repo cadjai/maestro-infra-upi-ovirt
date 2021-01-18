@@ -1,6 +1,6 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
 - name: ' Konductor | Provision UPI Infra | nginx.yml' 
-  hosts: "{{ nginx_hosts | default(groups.newregistry) }}"
+  hosts: "{{ groups.nginx_hosts | default(groups.newregistry) }}"
   become: yes
   vars_files:
     - 'vars/global.yml'
