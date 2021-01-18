@@ -40,3 +40,6 @@ vault_ocp_hosts_cidr: ""
 #RH Registry info
 vault_default_operator_registry_username: ""
 vault_default_operator_registry_password: ""
+
+# Yum Repo server
+vault_repo_server: ""
