@@ -79,8 +79,8 @@ sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
 # Repo Config
 use_statellite: false
 satellite_server: ''
-repo_server: ''
-generate_repo_file: 'false'
+repo_server: "{{ vault_repo_server }}" 
+generate_repo_file: 'true'
 yum_repo_file: 'files/yum.repo'
 
 # DNS Client Config
@@ -97,6 +97,10 @@ ipaclient_hostname: "{{ vault_ipaclient_hostname }}"
 # Load balancer Config
 kube_api_port: 6443
 machine_config_server_port: 22623
+haproxy_config_dir: '/etc/haproxy'
+haproxy_container_name: 'haproxy'
+haproxy_container_image: 'quay.io/cloudctl/haproxy'
+use_containerized_lb: 'true'
 
 #registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
 registry_host_fqdn: "{{ vault_registry_host_fqdn }}"
