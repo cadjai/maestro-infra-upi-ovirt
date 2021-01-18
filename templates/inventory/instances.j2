@@ -1,5 +1,6 @@
 {% if groups[instance_group] | d([]) | length > 0 %}
 {% for grp in instance_role_groups %}
+{% if groups[grp] | d([]) | length > 0 %}
 [new{{grp}}]
 {% for host in groups[instance_group] %}
 {% if not host in vm_skip_list %}
@@ -9,5 +10,6 @@
 {% endif %}
 {% endif %}
 {% endfor %}
+{% endif %}
 {% endfor %}
 {% endif %}
