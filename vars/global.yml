@@ -15,7 +15,7 @@ host_subdomain: "{{ vault_host_subdomain }}"
 additional_disks: []
 attach_additional_disks: true
 vm_memory: 16
-vm_cpu_cores: 1 
+vm_cpu_cores: 1
 vm_cpu_sockets: 4
 custom_script: "omit"
 ignition_url: "omit"
@@ -42,8 +42,8 @@ nic_boot_proto: 'dhcp'
 # OpenShift Version
 version_openshift: "{{ lookup('env', 'varVerOpenshift') }}"
 # openshift-install binary to run
-openshift_install_binary: /usr/local/bin/openshift-install 
-openshift_client_binary: /usr/local/bin/oc 
+openshift_install_binary: /usr/local/bin/openshift-install
+openshift_client_binary: /usr/local/bin/oc
 
 # Bash ENV Lookups
 local_home: "{{ lookup('env', 'HOME') }}"
@@ -63,7 +63,7 @@ dir_install: "{{ dir_deploy }}/install"
 dir_ansible: "{{ dir_deploy }}/ansible"
 dir_terraform: "{{ dir_deploy }}/terraform"
 
-# Hosts Environment 
+# Hosts Environment
 remote_home: "{{ ansible_env.HOME }}"
 
 # Linux Container Pull Secrets
@@ -77,7 +77,7 @@ sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
 
 
 # Repo Config
-use_statellite: false
+use_satellite: false
 satellite_server: ''
 repo_server: ''
 generate_repo_file: 'false'
@@ -129,7 +129,7 @@ rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
 rhcos_image_version_major: "4.6"
 rhcos_image_version_minor: "latest"
-rhcos_image_iso_names: 
+rhcos_image_iso_names:
   - "rhcos-openstack.x86_64.qcow2.gz"
   - "rhcos-live.x86_64.iso"
 #rhcos_image_url: "{{ dir_deploy }}/nginx-images/{{ rhcos_template_image_name }}"
@@ -179,10 +179,9 @@ rhel_iso_repos_name: 'rhel-isos'
 rhel_template_image_name: 'rhel-8.3-x86_64-kvm.qcow2'
 #rhel_template_name: 'rhel7-sever-template'
 rhel_template_name: 'rhel8-sever-template'
-rhel_image_iso_names: 
+rhel_image_iso_names:
   - "rhel-server-7.9-x86_64-kvm.qcow2"
   - "rhel-8.3-x86_64-kvm.qcow2"
 #rhel_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
 rhel_image_url: "{{ dir_deploy }}/nginx-images/{{ rhel_template_image_name }}"
 create_rhel_template: true
-
