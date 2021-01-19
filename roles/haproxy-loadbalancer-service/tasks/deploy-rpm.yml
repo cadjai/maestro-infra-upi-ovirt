@@ -1,0 +1,24 @@
+---
+# tasks file for haproxy-loadbalancer-service
+- name: '{{ ansible_name_module }} | Ensure the HA Proxy package is installed'
+  yum:
+    name: "haproxy"
+  register: haproxy_pkgs_installed
+
+- name: '{{ ansible_name_module }} | copy LB config template into place'
+  template:
+    src: "templates/loadbalancer/haproxy.cfg.j2"
+    dest: "/etc/haproxy/haproxy.cfg"
+    force: yes
+    backup: yes
+  register: haproxycfg_copied
+
+- name: '{{ ansible_name_module }} | Enable the HAProxy service'
+  systemd:
+    name: haproxy
+    enabled: true
+
+- name: '{{ ansible_name_module }} | Restart the HAProxy service'
+  systemd:
+    name: haproxy
+    state: restarted

@@ -1,0 +1,93 @@
+---
+# tasks file for haproxy-loadbalancer-service
+#- name: Create HAProxy config directories
+#  file:
+#    state: directory
+#    path: "{{ item }}"
+#    mode: 0755
+#    owner: root
+#    group: root
+#  with_items:
+#    - "{{ haproxy_config_dir }}"
+#    - "{{ haproxy_certs_dir }}"
+#  when:
+#    - haproxy_config_dir is defined and haproxy_config_dir | length > 0
+
+- name: '{{ ansible_name_module }} | copy LB config template into place'
+  template:
+    src: "templates/loadbalancer/haproxy.cfg.j2"
+    dest: "{{ haproxy_config_dir | d('/etc/haproxy', true) }}/haproxy.cfg"
+    force: yes
+    backup: yes
+  register: haproxycfg_copied
+
+- name: Check if the container exists from previous runs
+  shell: podman ps -a | grep {{ haproxy_container_name }}
+  register: container_stats
+  failed_when:
+    - container_stats is defined
+    - container_stats.rc is defined
+    - container_stats.rc > 1
+
+- name: Remove the container in case it was running from previous runs
+  command: podman rm -f {{ haproxy_container_name }}
+  when:
+    - container_stats is defined
+    - container_stats.stdout_lines is defined
+    - container_stats.stdout_lines | length > 0
+  register: container_haproxy_removed
+
+- name: Remove the container systemd file in case it was running from previous runs
+  file:
+    path: /etc/systemd/system/container-{{ haproxy_container_name }}.service
+    state: absent
+  when:
+    - container_stats is defined
+    - container_stats.stdout_lines is defined
+    - container_stats.stdout_lines | length > 0
+  register: container_haproxy_removed
+
+- name: Start the Loadbalance Container using Podman
+  command: podman run -d --name {{ haproxy_container_name }} -p 80:80 -p 443:443 -p 6443:6443 -p 9000:9000 -p 22623:22623 --restart=always -v {{ haproxy_config_dir }}/haproxy.cfg:/haproxy.cfg:z -v {{ haproxy_certs_dir }}/{{ haproxy_certfile }}:/{{ haproxy_certfile }} -v {{ haproxy_certs_dir }}/{{ haproxy_certkeyfile }}:/{{ haproxy_certkeyfile }} {{ haproxy_container_image }}
+  register: container_haproxy_started
+
+- name: Generate Systemd file for container to that the haproxy service is loaded
+  command: >
+    podman generate systemd --files \
+    --restart-policy=always \
+    --name {{ haproxy_container_name }}
+  register: container_haproxy_service_created
+
+- name: Load Loadbalance service file
+  copy:
+    src: "container-{{ haproxy_container_name }}.service"
+    dest: /etc/systemd/system/container-{{ haproxy_container_name }}.service
+    mode: 0777
+    owner: root
+    group: root
+    remote_src: true
+    force: true
+  when:
+    - container_haproxy_service_created is defined
+    - container_haproxy_service_created.rc == 0
+
+- name: Load Loadbalance service file
+  shell: cat /etc/systemd/system/container-{{ haproxy_container_name }}.service
+  register: haproxy_svc_out
+
+- name: Reload Systemd to that the haproxy service is loaded
+  systemd:
+    daemon_reload: yes
+  register: systemd_reloaded
+
+- name: Enable the Loadbalance service so that the haproxy is restarted after a reboot
+  systemd:
+    name: "container-{{ haproxy_container_name }}.service"
+    enabled: yes
+  register: haproxy_service_enabled
+
+- name: Start the Loadbalance service so that the haproxy is restarted after a reboot
+  systemd:
+    name: "container-{{ haproxy_container_name }}.service"
+    state: restarted
+  register: haproxy_service_restarted

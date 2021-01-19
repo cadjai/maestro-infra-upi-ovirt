@@ -1,0 +1,22 @@
+---
+# tasks file for config-host-to-run-containerized-service
+- name: '{{ ansible_name_module }} | Ensure the firewall-cmd is installed'
+  yum:
+    name: "firewalld"
+  register: firewalld_pkgs_installed
+
+- name: '{{ ansible_name_module }} | Ensure podman is installed'
+  yum:
+    name: "python-firewall,podman"
+  when:
+    - ansible_distribution_major_version == '7'
+
+- name: '{{ ansible_name_module }} | Ensure container-tools is installed'
+  shell: yum module install -y container-tools
+  when:
+    - ansible_distribution_major_version == '8'
+
+- name: '{{ ansible_name_module }} | Ensure Firewalld is enabled'
+  systemd:
+    name: firewalld
+    state: started

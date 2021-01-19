@@ -100,7 +100,15 @@ machine_config_server_port: 22623
 haproxy_config_dir: '/etc/haproxy'
 haproxy_container_name: 'haproxy'
 haproxy_container_image: 'quay.io/cloudctl/haproxy'
-use_containerized_lb: 'true'
+use_containerized_haproxy: 'true'
+generate_selfsigned_certfiles: 'true'
+ca_certfile: '{{ dir_deploy }}/registry/ca.crt'
+ca_keyfile: '{{ dir_deploy }}/registry/ca.key'
+haproxy_certs_dir: '/certs'
+haproxy_ca_keyfile: 'haproxy-ca.key'
+haproxy_ca_csrfile: 'haproxy-ca.csr'
+haproxy_container_cert_dir: '/certs'
+haproxy_host_fqdn: ''
 
 #registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
 registry_host_fqdn: "{{ vault_registry_host_fqdn }}"

@@ -1,0 +1,82 @@
+---
+# tasks file for haproxy-loadbalancer-service
+- name: '{{ ansible_name_module }} | Ensure SELinux ports are properly configured'
+  seport:
+    ports: 6443,22623,80,443,9000
+    proto: "{{ item }}"
+    setype: http_port_t
+    state: present
+  loop:
+    - tcp
+    - udp
+
+- name: '{{ ansible_name_module }} | Ensure Firewalld is enabled'
+  systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: '{{ ansible_name_module }} | Enable appropriates port on public zone'
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    zone: public
+    immediate: yes
+    state: enabled
+  loop:
+    - 6443/tcp
+    - 22623/tcp
+    - 443/tcp
+    - 80/tcp
+    - 9000/tcp
+
+- name: '{{ ansible_name_module }} | Enable appropriates port on internal zone'
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    zone: internal
+    immediate: yes
+    state: enabled
+  loop:
+    - 6443/tcp
+    - 22623/tcp
+    - 443/tcp
+    - 80/tcp
+    - 9000/tcp
+
+- name: Create HAProxy config directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "{{ haproxy_config_dir }}"
+    - "{{ haproxy_certs_dir }}"
+
+- name: Set Hostname if not already set
+  when:
+    - not haproxy_host_fqdn is defined or haproxy_host_fqdn == ""
+  block:
+    - name: Get hostname
+      shell: hostnamectl --static
+      register: haproxy_hostname
+
+    - name: Get hostname
+      set_fact:
+        haproxy_host_fqdn: "{{ haproxy_hostname.stdout }}"
+
+- name: Import tasks to create self signed certificate
+  include_tasks: generate-certificate.yml 
+
+- name: Import tasks to install RPM based HAProxy
+  include_tasks: deploy-rpm.yml
+  when:
+    - not use_containerized_haproxy is defined or not use_containerized_haproxy | bool
+
+- name: Import tasks to install containerized HAProxy
+  include_tasks: deploy-containerized.yml
+  when:
+    - use_containerized_haproxy is defined
+    - use_containerized_haproxy | bool

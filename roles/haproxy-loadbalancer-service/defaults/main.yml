@@ -1,0 +1,21 @@
+---
+# defaults file for roles/haproxy-loadbalancer-service
+use_containerized_haproxy: true
+haproxy_host_fqdn: ''
+haproxy_certs_dir: '/certs'
+haproxy_config_dir: '/etc/haproxy'
+haproxy_container_name: 'haproxy'
+haproxy_certcsrfile: 'haproxy.csr'
+haproxy_certfile: 'haproxy.crt'
+haproxy_certkeyfile: 'haproxy.key'
+haproxy_ca_certfile: 'haproxy-ca.crt'
+haproxy_container_image: 'quay.io/cloudctl/haproxy'
+generate_selfsigned_certfiles: 'true'
+cert_country: "US"
+cert_state: "CO"
+cert_locality: "Denver"
+cert_org: "Red Hat"
+cert_org_unit: "HAProxy LoadBalancer"
+haproxy_ca_keyfile: 'haproxy-ca.key'
+haproxy_ca_csrfile: 'haproxy-ca.csr'
+haproxy_container_cert_dir: '/certs'
