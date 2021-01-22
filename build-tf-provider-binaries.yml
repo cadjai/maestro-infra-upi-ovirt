@@ -1,7 +1,6 @@
 #!/usr/bin/ansible-playbook --inventory=inventory
 - name: "Konductor | Provision UPI Infra | build-tfprovider-binaries.yml"
-  #hosts: local
-  hosts: newlb 
+  hosts: local
   vars_files:
     - 'vars/vault.yml'
     - 'vars/global.yml'
@@ -72,10 +71,6 @@
       shell: cat {{ ansible_env.HOME }}/.bashrc
       register: bashrc_out
 
-    - name: Print Bashrc output
-      debug:
-        var: bashrc_out.stdout
-
     - name: Source bashrc file content
       shell: source {{ ansible_env.HOME }}/.bashrc
       register: bashrc_srced
@@ -117,10 +112,6 @@
         - "{{ terraform_providers_repos }}"
       register: tfproviders_archive_downloaded
 
-    - name: Print Download output
-      debug:
-        var: tfproviders_archive_downloaded.results
-
     - name: '{{ ansible_name_module }} | unarchive | Download and explore provider archives'
       unarchive:
         src: "{{ item.dest }}"
@@ -132,10 +123,6 @@
         - "{{ tfproviders_archive_downloaded.results }}"
       register: tfproviders_archive_installed
 
-    - name: Print install output
-      debug:
-        var: tfproviders_archive_installed.results
- 
     - name: '{{ ansible_name_module }} | find | get list of provider directories'
       find:
         file_type: directory
@@ -143,17 +130,9 @@
           - "{{ terraform_provider_repos_dir }}"
       register: tf_provider_dirs_search
 
-    - name: Print provider repo dir search output
-      debug:
-        var: tf_provider_dirs_search
-
     - name: '{{ ansible_name_module }} | set_fact | provider repo dir paths'
       set_fact:
         provider_dir_paths: "{{ tf_provider_dirs_search.files | map(attribute='path') | list }}"
-
-    - name: Print provider install dir paths 
-      debug:
-        var: provider_dir_paths
 
     - name: '{{ ansible_name_module }} | shell:make build | Build provider binaries'
       shell:
