@@ -17,6 +17,7 @@ attach_additional_disks: true
 vm_memory: 16
 vm_cpu_cores: 1 
 vm_cpu_sockets: 4
+rhcos_vm_root_disk_size: 150
 custom_script: "omit"
 ignition_url: "omit"
 metadata_json_file: "{{ dir_deploy }}/cluster/metadata.json"
@@ -197,4 +198,4 @@ rhel_image_iso_names:
 #rhel_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
 rhel_image_url: "{{ dir_deploy }}/nginx-images/{{ rhel_template_image_name }}"
 create_rhel_template: true
-
+rhel_vm_root_disk_size: 50

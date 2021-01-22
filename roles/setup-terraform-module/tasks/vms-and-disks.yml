@@ -80,4 +80,5 @@
     - { mode: '755', name: "templates/terraform/instance-all.auto.tfvars.j2", dest: "{{ tf_module_path }}/instance-all.auto.tfvars"}
     - { mode: '755', name: "templates/terraform/instance-all.tf.j2", dest: "{{ tf_module_path }}/instance-all.tf"}
     - { mode: '755', name: "templates/terraform/instance-out-all.tf.j2", dest: "{{ tf_module_path }}/instance-out-all.tf"}
+    - { mode: '755', name: "templates/terraform/vms-and-disks-main.tf.j2", dest: "{{ tf_module_path }}/modules/vms-and-disks/main.tf"}
 

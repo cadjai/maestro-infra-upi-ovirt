@@ -60,6 +60,11 @@ resource "ovirt_vm" "vm" {
     }
   }
   
+  block_device {
+    interface   = "virtio_scsi"
+    size        = 50
+  }
+
   timeouts {
     create = "6m"
     delete = "20m"
