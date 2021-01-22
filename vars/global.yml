@@ -17,6 +17,7 @@ attach_additional_disks: true
 vm_memory: 16
 vm_cpu_cores: 1 
 vm_cpu_sockets: 4
+rhcos_vm_root_disk_size: 150
 custom_script: "omit"
 ignition_url: "omit"
 metadata_json_file: "{{ dir_deploy }}/cluster/metadata.json"
@@ -79,8 +80,8 @@ sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
 # Repo Config
 use_statellite: false
 satellite_server: ''
-repo_server: ''
-generate_repo_file: 'false'
+repo_server: "{{ vault_repo_server }}" 
+generate_repo_file: 'true'
 yum_repo_file: 'files/yum.repo'
 
 # DNS Client Config
@@ -97,6 +98,18 @@ ipaclient_hostname: "{{ vault_ipaclient_hostname }}"
 # Load balancer Config
 kube_api_port: 6443
 machine_config_server_port: 22623
+haproxy_config_dir: '/etc/haproxy'
+haproxy_container_name: 'haproxy'
+haproxy_container_image: 'quay.io/cloudctl/haproxy'
+use_containerized_haproxy: 'true'
+generate_selfsigned_certfiles: 'true'
+ca_certfile: '{{ dir_deploy }}/registry/ca.crt'
+ca_keyfile: '{{ dir_deploy }}/registry/ca.key'
+haproxy_certs_dir: '/certs'
+haproxy_ca_keyfile: 'haproxy-ca.key'
+haproxy_ca_csrfile: 'haproxy-ca.csr'
+haproxy_container_cert_dir: '/certs'
+haproxy_host_fqdn: ''
 
 #registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
 registry_host_fqdn: "{{ vault_registry_host_fqdn }}"
@@ -185,4 +198,37 @@ rhel_image_iso_names:
 #rhel_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
 rhel_image_url: "{{ dir_deploy }}/nginx-images/{{ rhel_template_image_name }}"
 create_rhel_template: true
+rhel_vm_root_disk_size: 50
 
+### Terraform provider disconnected vars
+terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
+terraform_provider_config_file: "{{ local_home }}/.terraformrc"
+terraform_providers_repos:
+  aws:
+    repo: 'https://github.com/hashicorp/terraform-provider-aws/releases/latest'
+    archive: 'https://github.com/hashicorp/terraform-provider-aws/archive/v3.24.1.tar.gz'
+  azurerm:
+    repo: 'https://github.com/terraform-providers/terraform-provider-azurerm/releases/latest'
+    archive: 'https://github.com/terraform-providers/terraform-provider-azurerm/archive/v2.44.0.tar.gz'
+  vsphere:
+    repo: 'https://github.com/hashicorp/terraform-provider-vsphere/releases/latest'
+    archive: 'https://github.com/hashicorp/terraform-provider-vsphere/archive/v1.24.3.tar.gz'
+  ovirt:
+    repo: 'https://github.com/ovirt/terraform-provider-ovirt/releases/latest'
+    archive: 'https://github.com/oVirt/terraform-provider-ovirt/archive/v0.4.2.tar.gz'
+  openstack:
+    repo: 'https://github.com/terraform-provider-openstack/terraform-provider-openstack/releases/latest'
+    archive: 'https://github.com/terraform-provider-openstack/terraform-provider-openstack/archive/v1.35.0.tar.gz'
+    #archive: 'https://github.com/terraform-provider-openstack/terraform-provider-openstack/releases/download/v1.35.0/terraform-provider-openstack_v1.35.0_linux_amd64.zip'
+  google:
+    repo: 'https://github.com/hashicorp/terraform-provider-google/releases/latest'
+    archive: 'https://github.com/hashicorp/terraform-provider-google/archive/v3.52.0.tar.gz'
+  ibm-cloud:
+    repo: 'https://github.com/IBM-Cloud/terraform-provider-ibm/releases/latest'
+    archive: 'https://github.com/IBM-Cloud/terraform-provider-ibm/archive/v1.19.0.tar.gz'
+
+terraform_provider_repos_dir: "{{ remote_home }}/deploy/tf-repos"
+go_home_dir: "{{ remote_home }}/go"
+tf_binary_bundle_name: "tf-providers-bundle.tar.gz"
+tf_dir_bundle_location: "/tmp"
+                                    

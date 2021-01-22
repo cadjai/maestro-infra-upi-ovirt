@@ -1,0 +1,185 @@
+#!/usr/bin/ansible-playbook --inventory=inventory
+- name: "Konductor | Provision UPI Infra | build-tfprovider-binaries.yml"
+  #hosts: local
+  hosts: newlb 
+  vars_files:
+    - 'vars/vault.yml'
+    - 'vars/global.yml'
+  vars:
+    module: "build-terraform-providers"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+  tasks:
+
+    - name: '{{ ansible_name_module }} | Ensure required packages are installed and configured'
+      become: yes
+      when:
+        - ansible_distribution_major_version == '7' 
+      block:
+        - name: '{{ ansible_name_module }} | Ensure required toolset is installed'
+          yum:
+            name: "go-toolset-1.11,devtoolset-7,gcc,gcc-c++,make,kernel-devel"
+          register: toolset_pkgs_installed
+        - name: '{{ ansible_name_module }} | Configure SCL'
+          shell: scl enable go-toolset-1.11 'bash'
+
+    - name: '{{ ansible_name_module }} | Ensure required packages are installed and configured'
+      become: yes
+      when:
+        - ansible_distribution_major_version == '8' 
+      block:
+        - name: '{{ ansible_name_module }} | Ensure required toolset is installed'
+          shell: yum module install -y go-toolset
+          register: go_pkgs_installed
+
+        - name: '{{ ansible_name_module }} | Ensure required llvm-tools is installed'
+          shell: yum install -y llvm-toolset git gcc gcc-c++ make kernel-devel
+          register: llvm_pkgs_installed
+
+        - name: '{{ ansible_name_module }} | Ensure dev tools installed'
+          shell: dnf group install -y "Development Tools"
+          register: devtools_pkgs_installed
+
+    - name: '{{ ansible_name_module }} | set_fact | Ensure go home var is set'
+      set_fact:
+        go_home_dir: "{{ ansible_env.HOME }}/go"
+      when:
+        - not go_home_dir is defined or go_home_dir == ""
+
+    - name: '{{ ansible_name_module }} | file:directory | Ensure go home exist'
+      file:
+        path: "{{ go_home_dir }}"
+        state: directory
+        mode: 0755
+
+    - name: '{{ ansible_name_module }} | file:directory | Ensure go home exist'
+      file:
+        path: "{{ terraform_provider_repos_dir }}"
+        state: directory
+        mode: 0755
+
+    - name: Add GOPATH Config
+      blockinfile:
+        path: "{{ ansible_env.HOME }}/.bashrc"
+        insertafter: EOF 
+        state: present
+        marker: "# {mark} ANSIBLE MANAGED BLOCK Adding GOPATH" 
+        block: |-
+          export GOPATH="{{ go_home_dir }}"
+          export PATH="$PATH:${GOPATH//://bin:}/bin"
+      register: gopath_set 
+
+    - name: Cat bashrc file content
+      shell: cat {{ ansible_env.HOME }}/.bashrc
+      register: bashrc_out
+
+    - name: Print Bashrc output
+      debug:
+        var: bashrc_out.stdout
+
+    - name: Source bashrc file content
+      shell: source {{ ansible_env.HOME }}/.bashrc
+      register: bashrc_srced
+
+    - name: '{{ ansible_name_module }} | unarchive | Download and explore provider archives'
+      when:
+        - download_latest is defined
+        - download_latest | bool
+      block:
+        - name: '{{ ansible_name_module }} | shell:curl | latest download tags'
+          shell: curl -S {{ item.value.repo }} | grep 'tag' | cut -d '/' -f8 | cut -d '"' -f1
+          args:
+            warn: no
+          with_dict:
+            - "{{ terraform_providers_repos }}"
+          register: download_urls
+
+        - name: '{{ ansible_name_module }} | get_url | Download provider archives'
+          get_url:
+            url: "{{ item.item.value.archive.split('/v')[0] }}/{{ item.stdout }}.tar.gz"
+            dest: "{{ terraform_provider_repos_dir }}"
+            mode: 0755
+            force: true
+            validate_certs: false
+          with_items:
+            - "{{ download_urls.results }}"
+          register: tfproviders_archive_downloaded
+
+    - name: '{{ ansible_name_module }} | get_url | Download provider archives'
+      get_url:
+        url: "{{ item.value.archive }}"
+        dest: "{{ terraform_provider_repos_dir }}"
+        mode: 0755
+        force: true
+        validate_certs: false
+      when:
+        - not download_latest is defined or not download_latest | bool
+      with_dict:
+        - "{{ terraform_providers_repos }}"
+      register: tfproviders_archive_downloaded
+
+    - name: Print Download output
+      debug:
+        var: tfproviders_archive_downloaded.results
+
+    - name: '{{ ansible_name_module }} | unarchive | Download and explore provider archives'
+      unarchive:
+        src: "{{ item.dest }}"
+        dest: "{{ terraform_provider_repos_dir }}"
+        mode: 0755
+        remote_src: true
+        validate_certs: false
+      with_items:
+        - "{{ tfproviders_archive_downloaded.results }}"
+      register: tfproviders_archive_installed
+
+    - name: Print install output
+      debug:
+        var: tfproviders_archive_installed.results
+ 
+    - name: '{{ ansible_name_module }} | find | get list of provider directories'
+      find:
+        file_type: directory
+        paths:
+          - "{{ terraform_provider_repos_dir }}"
+      register: tf_provider_dirs_search
+
+    - name: Print provider repo dir search output
+      debug:
+        var: tf_provider_dirs_search
+
+    - name: '{{ ansible_name_module }} | set_fact | provider repo dir paths'
+      set_fact:
+        provider_dir_paths: "{{ tf_provider_dirs_search.files | map(attribute='path') | list }}"
+
+    - name: Print provider install dir paths 
+      debug:
+        var: provider_dir_paths
+
+    - name: '{{ ansible_name_module }} | shell:make build | Build provider binaries'
+      shell:
+        cmd: make build 
+        chdir: "{{ item }}"
+      with_items:
+        - "{{ provider_dir_paths }}"
+      when:
+        - provider_dir_paths is defined
+        - provider_dir_paths != ""
+      register: terraform_providers_built
+
+    - name: '{{ ansible_name_module }} | file:directory | Ensure staging dir exist'
+      become: yes
+      file:
+        path: "{{ tf_dir_bundle_location }}"
+        state: directory
+        mode: 0755
+
+    - name: '{{ ansible_name_module }} |  archive:xz | Bundle provider binaries'
+      become: yes
+      command: >
+        tar -c --use-compress-program='pigz -9' -v \
+          -f {{ tf_dir_bundle_location }}/{{ tf_binary_bundle_name }} \
+          -C {{ go_home_dir }}/bin .
+      args:
+        creates: "{{ tf_dir_bundle_location }}/{{ tf_binary_bundle_name }}"
+        warn: false
+        chdir: "{{ go_home_dir }}/bin/"
