@@ -30,7 +30,7 @@ resource "ovirt_vm" "{{ template_type }}_tmp_vm" {
   name			= "{{ template_type }}_tmp_vm-${var.{{ template_type }}_template_name}"
   block_device {
     disk_id	= ovirt_image_transfer.{{ template_type }}_release_image.disk_id
-    interface	= "virtio_scsi"
+    interface	= "virtio"
     size	= {{ template_disk_size | d('120',true) | int }}
   }
   auto_start 		= false

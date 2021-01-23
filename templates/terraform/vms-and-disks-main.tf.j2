@@ -61,7 +61,7 @@ resource "ovirt_vm" "vm" {
   }
   
   block_device {
-    interface   = "virtio_scsi"
+    interface   = "virtio"
 {% if template_type == 'rhcos' %}
     size        = {{ rhcos_vm_root_disk_size | default('120') | int }}
 {% elif template_type == 'rhel' %}

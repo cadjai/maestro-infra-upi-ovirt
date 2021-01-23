@@ -61,7 +61,7 @@ resource "ovirt_vm" "vm" {
   }
   
   block_device {
-    interface   = "virtio_scsi"
+    interface   = "virtio"
     size        = 50
   }
 

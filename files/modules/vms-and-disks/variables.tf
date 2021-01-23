@@ -55,7 +55,7 @@ variable "bootable" {
   default = "false"
 }
 variable "interface" {
-  default = "virtio_scsi"
+  default = "virtio"
 }
 variable "pass_discard" {
   default = ""
