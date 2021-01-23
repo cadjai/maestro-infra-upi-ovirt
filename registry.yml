@@ -9,6 +9,9 @@
     module: "registry"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
   tasks:
+    - name: '{{ ansible_name_module }} | import_role | config-host-to-containerized-service'
+      import_role:
+        name: config-host-to-run-containerized-service
     - name: '{{ ansible_name_module }} | file | registry local directory'
       file:
         path: "{{ registra_ca_local_dir }}"
