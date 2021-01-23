@@ -12,7 +12,9 @@
     search_dir_suffix: "node-search"
     instance_file_suffix: "-search"
     instance_inventory_file: "infra"
-    instance_role_groups: "{{ ['lb','registry'] }}"
+    instance_role_groups: 
+      - lb
+      - registry
   vars_files:
     - vars/vault.yml
     - vars/global.yml

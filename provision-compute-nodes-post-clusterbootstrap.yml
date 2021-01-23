@@ -18,14 +18,16 @@
   vars:
     instance_type: "cluster-compute-resources"
     instance_group: "cluster"
-    instance_role_groups: "{{ ['workers'] }}"
+    instance_role_groups: 
+      - workers
     create_workers: true
     include_masters: true
     include_workers: true
 - import_playbook: build-upi-cluster.yml   # Use terraform to provision cluster ressources
   vars:
     instance_type: "cluster-compute-resources"
-    instance_role_groups: "{{ ['workers'] }}"
+    instance_role_groups: 
+      - workers
     include_masters: true
     include_workers: true
 - import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces

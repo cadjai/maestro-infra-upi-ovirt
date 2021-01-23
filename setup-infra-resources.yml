@@ -22,7 +22,9 @@
     tf_module_path: "{{ dir_terraform }}/{{ module }}/{{ instance_type }}"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }} | {{ instance_type }}"
     instance_group: "infra"
-    instance_role_groups: "{{ ['lb','registry'] }}"
+    instance_role_groups: 
+      - lb
+      - registry
     instance_dir_suffix: "-node-search"
     search_dir_suffix: "node-search"
     instance_file_suffix: "-search"
