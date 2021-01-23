@@ -2,6 +2,7 @@
 - name: '{{ name_vendor }} | Koffer | loadbalancer.yml' 
   hosts: newdns 
   vars_files:
+    - 'vars/vault.yml'
     - 'vars/global.yml'
     - 'vars/dns.yml'
   vars:
