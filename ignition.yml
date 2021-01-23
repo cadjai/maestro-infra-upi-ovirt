@@ -2,13 +2,33 @@
 - name: 'RedHat | Konductor | ignition' 
   hosts: local
   vars_files:
-   # - '../cluster-vars.yml'
-   # - 'vars/{{ target_environment }}.yml'
     - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "ignition"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
     update_cluster_network_config: true
+  pre_tasks:
+    - name: '{{ ansible_name_module }} | assert | source pull secret is set'
+      assert:
+        that:
+          - "ocp_registry_pull_secret_file is defined"
+          - "not ocp_registry_pull_secret_file == ''"
+        msg: "The pullsecret variable for the OCP source registries is required"
+
+    - name: '{{ ansible_name_module }} | stat| check source pull secret file exist'
+      stat:
+        path: "{{ ocp_registry_pull_secret_file }}"
+      register: pull_secret_file_stat
+
+    - name: '{{ ansible_name_module }} | assert | Ensure the source pull secret file exist'
+      assert:
+        that:
+          - pull_secret_file_stat is defined
+          - pull_secret_file_stat.stat is defined
+          - pull_secret_file_stat.stat.isreg is defined
+          - pull_secret_file_stat.stat.isreg
+        msg: "The pullsecret json file for the OCP source registries is required"
+
   roles:
     - { role: ignition } 
