@@ -3,6 +3,7 @@
   hosts: newregistry
   become: yes
   vars_files:
+    - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
     module: "registry"
