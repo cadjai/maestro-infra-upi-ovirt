@@ -78,8 +78,11 @@ sshkeys_pub_string: "{{ lookup('file', '{{ sshkeys_pub_file }}') }}"
 
 
 # Repo Config
-use_satellite: false
-satellite_server: ''
+use_satellite: true
+satellite_server: 'satellite.homelab'
+# Must define if using satellite
+redhat_subscription_org_id: 'homelab'
+redhat_subscription_activationkey: 'rhel7'
 repo_server: "{{ vault_repo_server }}" 
 generate_repo_file: 'true'
 yum_repo_file: 'files/yum.repo'
@@ -119,7 +122,7 @@ registry_admin_password: "{{ vault_registry_admin_password }}"
 secure_registry: true
 enable_authz_on_registry: true
 generate_selfsigned_registry_certfiles: true
-use_containeried_registry: true
+use_containeried_registry: false
 provision_nginx: true
 ign_repos_name: 'ign-repos'
 ign_iso_repos_name: 'rhcos-isos'
@@ -138,6 +141,7 @@ registry_ca_local_name: "registry-ca.crt"
 ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
 ocp_master_count: 3
 ocp_worker_count: 2
+#rhcos_template_image_name: "rhcos-live.x86_64.iso"
 rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
 rhcos_image_version_major: "4.6"
@@ -145,10 +149,11 @@ rhcos_image_version_minor: "latest"
 rhcos_image_iso_names:
   - "rhcos-openstack.x86_64.qcow2.gz"
   - "rhcos-live.x86_64.iso"
-#rhcos_image_url: "{{ dir_deploy }}/nginx-images/{{ rhcos_template_image_name }}"
-rhcos_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
-#create_rhcos_template: false
+#rhcos_image_url: "http://{{ nginx_hosts[0] | d(groups.newregistry[0]) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
+#rhcos_image_url: "/root/rhcos-live.x86_64.iso"
+rhcos_image_url: "/root/rhcos-openstack.x86_64.qcow2"
 create_rhcos_template: true
+#create_rhcos_template: true
 #oc_client_binary: "files/oc.tar.gz"
 oc_client_binary: "files/openshift-client-linux-4.6.4.tar.gz"
 ocp_release_version: 4.6.4
@@ -156,7 +161,7 @@ host_rhcos_images: false
 ignition_spec_version: "3.1.0"
 registry_container_auth_dir: '/auth'
 registry_container_cert_dir: '/certs'
-dir_bundle_location: "/data/bundle"
+dir_bundle_location: "/root/bundle"
 registry_container_name: 'mirror-registry'
 registry_container_image: 'docker.io/library/registry:2'
 registry_container_dir: '/var/lib/registry'
@@ -185,7 +190,7 @@ terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
 terraform_provider_config_file: "{{ local_home }}/.terraformrc"
 
 ### RHEL Template variables  ###
-host_rhel_images: true
+host_rhel_images: false
 rhel_iso_repos_name: 'rhel-isos'
 ### Only qcow2 images seems to work with rhev template provisioning
 #rhel_template_image_name: 'rhel-server-7.9-x86_64-kvm.qcow2'
