@@ -1,0 +1,22 @@
+galaxy_info:
+  author: Paul Lyon
+  description: Registers and attaches RedHat subscriptions.
+  issue_tracker_url: https://github.com/the-paulus/redhat-subscription/issues
+  license: BSD
+
+  min_ansible_version: 1.2
+
+  github_branch: master
+
+  platforms:
+  - name: EL
+    versions:
+    - 7
+
+  galaxy_tags:
+  - redhat
+  - subscription
+  - management
+  - system
+
+dependencies: []

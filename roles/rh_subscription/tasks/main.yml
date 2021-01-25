@@ -1,0 +1,54 @@
+---
+- name: Check if system has a subscription attached
+  shell: subscription-manager status | grep Current
+  register: subscription_status
+  ignore_errors: yes
+
+- name: Subscribe using username and password
+  redhat_subscription:
+    username: "{{ redhat_subscription_username }}"
+    password: "{{ redhat_subscription_password }}"
+    autosubscribe: yes
+    force_register: yes
+  when: redhat_subscription_username is defined and redhat_subscription_password is defined and redhat_subscription_activationkey is not defined and subscription_status.rc == 1 and ( redhat_subscription_client_id is not defined or redhat_subscription_client_id == "")
+
+- name: Subscribe using username and password using client id
+  redhat_subscription:
+    username: "{{ redhat_subscription_username }}"
+    password: "{{ redhat_subscription_password }}"
+    consumer_id: "{{ redhat_subscription_client_id }}"
+    autosubscribe: yes
+  when: redhat_subscription_username is defined and redhat_subscription_password is defined and redhat_subscription_activationkey is not defined and subscription_status.rc == 1 and ( redhat_subscription_client_id is defined and redhat_subscription_client_id != "")
+
+
+- name: Subscribe using activationkey
+  redhat_subscription:
+    org_id: "{{ redhat_subscription_org_id }}"
+    activationkey: "{{ redhat_subscription_activationkey }}"
+    #autosubscribe: yes
+    force_register: yes
+  when: redhat_subscription_username is not defined and redhat_subscription_password is not defined and redhat_subscription_activationkey is defined and subscription_status.rc == 1 and ( redhat_subscription_client_id is not defined or redhat_subscription_client_id == "")
+
+- name: Subscribe using activationkey using client id
+  redhat_subscription:
+    org_id: "{{ redhat_subscription_org_id }}"
+    activationkey: "{{ redhat_subscription_activationkey }}"
+    consumer_id: "{{ redhat_subscription_client_id }}"
+    autosubscribe: yes
+  when: redhat_subscription_username is not defined and redhat_subscription_password is not defined and redhat_subscription_activationkey is defined and subscription_status.rc == 1 and ( redhat_subscription_client_id is defined or redhat_subscription_client_id != "")
+
+- name: Enable Red Hat Repos
+  shell: "subscription-manager repos --enable {{ item }}"
+  with_items: "{{ redhat_subscription_repositories }}"
+  when: redhat_subscription_repositories is defined
+
+- name: Disable Red Hat Repos
+  shell: "subscription-manager repos --disable {{ item }}"
+  with_items: "{{ redhat_subscription_disable_repositories }}"
+  when: redhat_subscription_disable_repositories is defined 
+
+- name: Update packages.
+  yum:
+    name: "*"
+    state: latest
+    disable_gpg_check: yes

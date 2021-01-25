@@ -52,6 +52,11 @@
     - satellite_server is defined
     - not satellite_server == ""
   block:
+    - name: '{{ ansible_name_module }} | Download satellite katello-rpm and install | yum | katello.rpm'
+      yum:
+        name: 'http://{{ satellite_server }}/pub/katello-ca-consumer-latest.noarch.rpm'
+        state: present
+
     - name: '{{ ansible_name_module }} | Register client with Satellite | Role | RH Subscription' 
       include_role: 
         name: rh_subscription
