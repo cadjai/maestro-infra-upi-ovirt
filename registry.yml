@@ -14,11 +14,31 @@
         name: config-host-to-run-containerized-service
     - name: '{{ ansible_name_module }} | file | registry local directory'
       file:
-        path: "{{ registra_ca_local_dir }}"
+        path: "{{ registry_ca_local_dir }}"
         state: directory
         mode: 0755
     - name: '{{ ansible_name_module }} | import_role | registry'
       import_role:
         name: registry
+
+    - name: '{{ ansible_name_module }} | copy | registry CA into ca file'
+      block:
+        - name: '{{ ansible_name_module }} | find |all registry ca related files '
+          find:
+            file_type: file
+            patterns:
+              - "registry*"
+            paths:
+              - "{{ registry_ca_local_dir }}"
+          register: registry_certs
+
+        - name: '{{ ansible_name_module }} | set_fact | all registry ca related files search paths'
+          set_fact:
+            file_search_paths: "{{ registry_certs.files | map(attribute='path') | list }}"
+
+        - name: '{{ ansible_name_module }} | command | rename files'
+          command: cp {{ item }} {{ item | dirname }}/{{ (item | basename).split('registry-')[1] }}
+          loop:
+            - "{{ registry_ca_local_dir }}"
 
 

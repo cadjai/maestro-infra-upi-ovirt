@@ -10,7 +10,7 @@
 
 - name: '{{ ansible_name_module }} | file:directory | Ensure the ignition directories exist'
   shell:
-    cmd: "cat {{ registra_ca_local_dir }}/{{ registry_ca_local_name }} | grep -v CERTIFICATE | tr -d '\n'"
+    cmd: "cat {{ registry_ca_local_dir }}/{{ registry_ca_local_name }} | grep -v CERTIFICATE | tr -d '\n'"
   register: registry_ca_cert
 
 - name: '{{ ansible_name_module }} | podman:login | Login to private container registry'

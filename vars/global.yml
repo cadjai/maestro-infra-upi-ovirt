@@ -119,7 +119,7 @@ registry_admin_password: "{{ vault_registry_admin_password }}"
 secure_registry: true
 enable_authz_on_registry: true
 generate_selfsigned_registry_certfiles: true
-use_containeried_registry: true
+use_containerized_registry: true
 provision_nginx: true
 ign_repos_name: 'ign-repos'
 ign_iso_repos_name: 'rhcos-isos'
@@ -133,7 +133,7 @@ ocp_hosts_cidr: '{{ vault_ocp_hosts_cidr }}'
 ocp_registry_pull_secret_file: 'files/quay-pull-secret.json'
 local_repository: 'openshift4'
 registry_host_port: '5000'
-registra_ca_local_dir: "{{ dir_deploy }}/registry"
+registry_ca_local_dir: "{{ dir_deploy }}/registry"
 registry_ca_local_name: "registry-ca.crt"
 ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
 ocp_master_count: 3
