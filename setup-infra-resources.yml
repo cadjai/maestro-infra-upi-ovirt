@@ -2,6 +2,9 @@
 - name: ' Konductor | Provision UPI Infra | Gather instance facts'
   hosts: local
   gather_facts: no
+  vars_files:
+    - vars/vault.yml
+    - vars/global.yml
   tasks:
     - setup:
     - name: "ovirt | ensure that the RHEL template id to use exist"
