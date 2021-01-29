@@ -12,6 +12,7 @@
     - name: '{{ ansible_name_module }} | import_role | config-host-to-containerized-service'
       import_role:
         name: config-host-to-run-containerized-service
+
     - name: '{{ ansible_name_module }} | file | registry local directory'
       file:
         path: "{{ registry_ca_local_dir }}"
@@ -35,10 +36,16 @@
         - name: '{{ ansible_name_module }} | set_fact | all registry ca related files search paths'
           set_fact:
             file_search_paths: "{{ registry_certs.files | map(attribute='path') | list }}"
+          when:
+            - registry_certs is defined
+            - registry_certs.matched > 0
 
         - name: '{{ ansible_name_module }} | command | rename files'
-          command: cp {{ item }} {{ item | dirname }}/{{ (item | basename).split('registry-')[1] }}
-          loop:
-            - "{{ registry_ca_local_dir }}"
-
-
+          copy:
+            src: "{{ item }}"
+            dest: "{{ (item | dirname) }}/{{ (item | basename).split('-')[1] }}"
+            remote_src: yes
+          loop: "{{ file_search_paths }}"
+          when:
+            - file_search_paths is defined
+            - file_search_paths != ""
