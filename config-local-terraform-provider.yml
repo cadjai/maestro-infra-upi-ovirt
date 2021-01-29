@@ -1,38 +1,117 @@
 #!/usr/bin/ansible-playbook --inventory=inventory
 - name: "Konductor | Provision UPI Infra | config-local-terraform-provider.yml"
-  hosts: local
+  hosts: localhost
   vars_files:
-    - 'vars/vault.yml'
-    - 'vars/global.yml'
+    #- 'vars/vault.yml'
+    #- 'vars/global.yml'
   vars:
     module: "terraform-provider-local"
-    install_terraform: "true"
-    terraform_client_binary: "/tmp/terraform-provider-ovirt"
+    config_default_terraform_provider: "true"
+    install_terraform_provider: "true"
+    install_terraform_provider_bundle: "/tmp/tf-providers-bundle.tar.gz"
+    terraform_client_binary: "/tmp/tmerraform-provider-ovirt"
+    tf_dir_bundle_location: "/tmp"
+    local_home: "{{ lookup('env', 'HOME') }}"
     terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
     terraform_provider_config_file: "{{ local_home }}/.terraformrc"
     terraform_provider_full_name: "terraform-provider-ovirt"
+    terraform_domain: "hashicorp.com"
+    terraform_namespace: "dev"
+    terraform_providers:
+      aws:
+        version: "3.24.1"
+      azurerm:
+        version: "2.44.0"
+      vsphere:
+        version: "1.24.3"
+      ovirt:
+        version: "0.4.2"
+      openstack:
+        version: "1.35.0"
+      google:
+        version: "3.52.0"
+      ibm-cloud:
+        version: "1.19.0"
+    terraform_provider_type: "linux_amd64"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
   tasks:
 
-    - name: '{{ ansible_name_module }} | copy | terraform provider binary to bastion'
+    - name: '{{ ansible_name_module }} | copy | terraform provider binary bundle to bastion'
       when:
-        - install_terraform is defined
-        - install_terraform | bool
+        - install_terraform_provider is defined
+        - install_terraform_provider | bool
+      block:
+        - name: '{{ ansible_name_module }} | copy | terraform provider binary bundle to bastion'
+          copy:
+            src: "{{ install_terraform_provider_bundle }}"
+            dest: "{{ tf_dir_bundle_location }}/{{ install_terraform_provider_bundle | basename }}"
+            mode: 0755
+            force: yes
+          when:
+            - inventory_hostname != 'localhost'
+          register: terraform_client_copied
+
+        - name: '{{ ansible_name_module }} | shell | get installed tf version '
+          shell: terraform version | head -n 1 | awk '{print $2}'
+          ignore_errors: true
+          register: ter_ver 
+
+        - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform provider directory exist '
+          file:
+            path: "{{ terraform_provider_dir }}"
+            state: directory
+            recurse: true
+
+        - name: '{{ ansible_name_module }} | unarchive | bundle provider files to host'
+          unarchive:
+            src: "{{ install_terraform_provider_bundle }}"
+            remote_src: yes
+            dest: "{{ terraform_provider_dir}}/"
+            mode: 0755
+          register: unbundle_out
+
+        - name: '{{ ansible_name_module }} | file:state=directory | for each provider '
+          file:
+            path: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}"
+            state: directory
+            recurse: true
+          with_dict:
+            - "{{ terraform_providers }}" 
+          when:
+            - not ter_ver.stdout.split('v')[0] is version_compare('13.0.0', '<=')
+
+        - name: '{{ ansible_name_module }} | shell:mv | for each provider '
+          shell: mv {{ terraform_provider_dir }}/provider-{{ item.key }} {{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }} 
+          with_dict:
+            - "{{ terraform_providers }}" 
+          when:
+            - not ter_ver.stdout.split('v')[0] is version_compare('13.0.0', '<=')
+
+        - name: '{{ ansible_name_module }} | template | create terraform provider v14 config file'
+          template:
+            src: "templates/terraform/terraformrc-v14.j2"
+            dest: "{{ terraform_provider_dir }}/main.tf"
+            mode: 0755
+            force: yes
+
+        - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform provider module'
+          shell:
+            cmd: terraform init
+            chdir: "{{ terraform_provider_dir }}"
+          register: terraform_init
+
+          
+
+    - name: '{{ ansible_name_module }} | configure default tf provider on bastion'
+      when:
+        - config_default_terraform_provider is defined
+        - config_default_terraform_provider | bool
       block:
         - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform directory exist '
           file:
             path: "{{ terraform_provider_dir }}"
             state: directory
             recurse: true
-
-        - name: '{{ ansible_name_module }} | copy | terraform client to bastion'
-          copy:
-            src: "{{ terraform_client_binary }}"
-            dest: "{{ terraform_provider_dir }}"
-            remote_src: true
-            mode: 0755
-            force: yes
-          register: terraform_client_copied
 
         - name: '{{ ansible_name_module }} | template | create terraformrc file'
           template:
@@ -52,3 +131,4 @@
             cmd: terraform init
             chdir: "{{ terraform_provider_dir }}"
           register: terraform_init
+
