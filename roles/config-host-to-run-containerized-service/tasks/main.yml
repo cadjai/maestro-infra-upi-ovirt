@@ -3,11 +3,13 @@
 - name: '{{ ansible_name_module }} | Ensure the firewall-cmd is installed'
   yum:
     name: "firewalld"
+    state: present
   register: firewalld_pkgs_installed
 
 - name: '{{ ansible_name_module }} | Ensure podman is installed'
   yum:
     name: "python-firewall,podman"
+    state: present
   when:
     - ansible_distribution_major_version == '7'
 
