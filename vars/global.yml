@@ -130,7 +130,7 @@ nginx_conf: "/etc/opt/rh/rh-nginx116/nginx/nginx.conf"
 nginx_config_dir: '/etc/nginx'
 nginx_container_name: 'nginx'
 nginx_container_image: 'quay.io/cloudctl/nginx'
-use_containerized_nginx: 'false'
+use_containerized_nginx: 'true'
 
 # OCP Cluster Config
 ocp_cluster_name: '{{ vault_ocp_cluster_name }}'

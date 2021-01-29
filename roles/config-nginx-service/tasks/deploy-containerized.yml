@@ -13,13 +13,25 @@
   when:
     - nginx_config_dir is defined and nginx_config_dir | length > 0
 
-- name: '{{ ansible_name_module }} | copy LB config template into place'
+- name: '{{ ansible_name_module }} | copy Nginx config template into place'
   template:
     src: "nginx-container.conf.j2"
     dest: "{{ nginx_config_dir }}/nginx.conf"
     force: yes
     backup: yes
   register: nginxcfg_copied
+
+- name: '{{ ansible_name_module }} | copy Nginx html file into place'
+  template:
+    src: "{{ item }}"
+    dest: "{{ nginx_root_dir }}/{{ item }}"
+    force: yes
+    backup: yes
+  with_items:
+    - "404.html"
+    - "50x.html"
+    - "index.html"
+  register: nginxhtml_copied
 
 - name: '{{ ansible_name_module }} | Check if the container exists from previous runs'
   shell: podman ps -a | grep {{ nginx_container_name }}
@@ -48,7 +60,7 @@
   register: container_nginx_removed
 
 - name: '{{ ansible_name_module }} | Start the nginx Container using Podman'
-  command: podman run -d --name {{ nginx_container_name }} -p 80:80 --restart=always -v {{ nginx_config_dir }}/nginx.conf:/nginx.conf:z -v {{ nginx_root_dir }}:{{ nginx_root_dir }}:z  {{ nginx_container_image }}
+  command: podman run -d --name {{ nginx_container_name }} -p 80:80 --restart=always -v {{ nginx_config_dir }}/nginx.conf:/nginx.conf:z -v {{ nginx_root_dir }}:{{ nginx_root_dir }}  {{ nginx_container_image }}
   register: container_nginx_started
 
 - name: '{{ ansible_name_module }} | Generate Systemd file for container to that the nginx service is loaded'
