@@ -48,7 +48,7 @@
   register: container_haproxy_removed
 
 - name: Start the Loadbalance Container using Podman
-  command: podman run -d --name {{ haproxy_container_name }} -p 80:80 -p 443:443 -p 6443:6443 -p 9000:9000 -p 22623:22623 --restart=always -v {{ haproxy_config_dir }}/haproxy.cfg:/haproxy.cfg:z -v {{ haproxy_certs_dir }}/{{ haproxy_certfile }}:/{{ haproxy_certfile }} -v {{ haproxy_certs_dir }}/{{ haproxy_certkeyfile }}:/{{ haproxy_certkeyfile }} {{ haproxy_container_image }}
+  command: podman run -d --name {{ haproxy_container_name }} -p 80:80 -p 443:443 -p 6443:6443 -p 9000:9000 -p 22623:22623 --restart=always -v {{ haproxy_config_dir }}/haproxy.cfg:/haproxy.cfg:z -v {{ haproxy_certs_dir }}/{{ haproxy_certfile }}:/{{ haproxy_certfile }}:z -v {{ haproxy_certs_dir }}/{{ haproxy_certkeyfile }}:/{{ haproxy_certkeyfile }}:z {{ haproxy_container_image }}
   register: container_haproxy_started
 
 - name: Generate Systemd file for container to that the haproxy service is loaded
