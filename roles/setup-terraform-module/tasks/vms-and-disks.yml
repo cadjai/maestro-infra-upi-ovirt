@@ -52,7 +52,7 @@
     ignition_url: "{{ hostvars[item].ignition_url | d(ignition_url) }}"
   loop: "{{ groups.all }}"
   when:
-    - hostvars[item].group_names[0] in instance_role_groups
+    - hostvars[item].group_names[0] in instance_role_groups or ( hostvars[item].group_names[1] is defined and hostvars[item].group_names[1] in instance_role_groups)
 
 ####### Stage Terraform ovirt config for each of the required UPI Infra nodes
 - name: '{{ ansible_name_module }} | file | Create directories'
