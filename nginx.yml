@@ -6,7 +6,7 @@
     - 'vars/vault.yml'
     - 'vars/global.yml'
   vars:
-    module: "registry"
+    module: "nginx"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
   tasks:
     - name: '{{ ansible_name_module }} | Install and Nginx to host ignition files' 
@@ -14,63 +14,11 @@
         - provision_nginx is defined
         - provision_nginx | bool
       block:
-        - name: '{{ ansible_name_module }} | Install Nginx available in repo '
-          yum:
-            #name: "{{ nginx_version | d ('rh-nginx116') }}"
-            name: rh-nginx116
-            state: present
+        - name: '{{ ansible_name_module }} | import_role | config-host-to-containerized-service'
+          import_role:
+            name: config-host-to-run-containerized-service
 
-        - name: '{{ ansible_name_module }} | shell:systemctl list-unit-file | get nginx service name '
-          shell: "systemctl list-unit-files | grep rh-nginx116 | awk '{print $1}'"
-          register: nginx_service
-
-        - name: '{{ ansible_name_module }} | template |  nginx.conf '
-          template:
-            src: "templates/nginx/nginx.conf.j2"
-            dest: "{{ nginx_conf }}"
-            mode: '755'
-            backup: yes
-
-        - name: '{{ ansible_name_module }} | file |  ign-repos '
-          file:
-            path: "{{ nginx_root_directory }}/{{ ign_repos_name }}"
-            state: directory
-            mode: 755
-
-        - name: '{{ ansible_name_module }} | file |  rhcos-isos '
-          file:
-            path: "{{ nginx_root_directory }}/{{ ign_iso_repos_name }}"
-            state: directory
-            mode: 755
-          when:
-            - host_rhcos_images is defined
-            - host_rhcos_images | bool
-
-        - name: '{{ ansible_name_module }} | Ensure Nginx Service is started and enabled '
-          systemd:
-            name: "{{ nginx_service.stdout }}"
-            state: started
-            enabled: yes
-          when: 
-            - nginx_service
-            - nginx_service.rc == 0
-            - not nginx_service.stdout == ""
-     
-        - name: Enable firewalld port for the service
-          firewalld:
-            port: "80/tcp"
-            immediate: yes
-            permanent: yes
-            state: enabled
-
-
-        #- name: '{{ ansible_name_module }} | Import Nginx Configuration role'
-        #  include_role:
-        #    name: nginxinc.nginx_core.nginx_config
-        #  vars:
-        #    nginx_install_from: os_repository
-        #    nginx_config_selinux: true
-        #    nginx_config_http_template_enable: true
-        #    nginx_config_main_template_enable: true
-        #  register: nginx_configured
+        - name: '{{ ansible_name_module }} | import_role | config-nginx-service'
+          import_role:
+            name: config-nginx-service
 

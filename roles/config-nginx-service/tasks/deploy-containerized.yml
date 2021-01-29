@@ -1,0 +1,93 @@
+---
+# tasks file for config-nginx-service
+- name: '{{ ansible_name_module }} | Create Nginx config and root directories'
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "{{ nginx_config_dir }}"
+    - "{{ nginx_root_dir }}"
+  when:
+    - nginx_config_dir is defined and nginx_config_dir | length > 0
+
+- name: '{{ ansible_name_module }} | copy LB config template into place'
+  template:
+    src: "nginx-container.conf.j2"
+    dest: "{{ nginx_config_dir }}/nginx.conf"
+    force: yes
+    backup: yes
+  register: nginxcfg_copied
+
+- name: '{{ ansible_name_module }} | Check if the container exists from previous runs'
+  shell: podman ps -a | grep {{ nginx_container_name }}
+  register: container_stats
+  failed_when:
+    - container_stats is defined
+    - container_stats.rc is defined
+    - container_stats.rc > 1
+
+- name: '{{ ansible_name_module }} | Remove the container in case it was running from previous runs'
+  command: podman rm -f {{ nginx_container_name }}
+  when:
+    - container_stats is defined
+    - container_stats.stdout_lines is defined
+    - container_stats.stdout_lines | length > 0
+  register: container_nginx_removed
+
+- name: '{{ ansible_name_module }} | Remove the container systemd file in case it was running from previous runs'
+  file:
+    path: /etc/systemd/system/container-{{ nginx_container_name }}.service
+    state: absent
+  when:
+    - container_stats is defined
+    - container_stats.stdout_lines is defined
+    - container_stats.stdout_lines | length > 0
+  register: container_nginx_removed
+
+- name: '{{ ansible_name_module }} | Start the nginx Container using Podman'
+  command: podman run -d --name {{ nginx_container_name }} -p 80:80 --restart=always -v {{ nginx_config_dir }}/nginx.conf:/nginx.conf:z -v {{ nginx_root_dir }}:{{ nginx_root_dir }}:z  {{ nginx_container_image }}
+  register: container_nginx_started
+
+- name: '{{ ansible_name_module }} | Generate Systemd file for container to that the nginx service is loaded'
+  command: >
+    podman generate systemd --files \
+    --restart-policy=always \
+    --name {{ nginx_container_name }}
+  register: container_nginx_service_created
+
+- name: '{{ ansible_name_module }} | Load nginx service file'
+  copy:
+    src: "container-{{ nginx_container_name }}.service"
+    dest: /etc/systemd/system/container-{{ nginx_container_name }}.service
+    mode: 0777
+    owner: root
+    group: root
+    remote_src: true
+    force: true
+  when:
+    - container_nginx_service_created is defined
+    - container_nginx_service_created.rc == 0
+
+- name: '{{ ansible_name_module }} | Load nginx service file'
+  shell: cat /etc/systemd/system/container-{{ nginx_container_name }}.service
+  register: nginx_svc_out
+
+- name: '{{ ansible_name_module }} | Reload Systemd to that the nginx service is loaded'
+  systemd:
+    daemon_reload: yes
+  register: systemd_reloaded
+
+- name: '{{ ansible_name_module }} | Enable the nginx service so that the nginx is restarted after a reboot'
+  systemd:
+    name: "container-{{ nginx_container_name }}.service"
+    enabled: yes
+  register: nginx_service_enabled
+
+- name: '{{ ansible_name_module }} | Start the nginx service so that the nginx is restarted after a reboot'
+  systemd:
+    name: "container-{{ nginx_container_name }}.service"
+    state: restarted
+  register: nginx_service_restarted

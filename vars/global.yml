@@ -120,11 +120,17 @@ secure_registry: true
 enable_authz_on_registry: true
 generate_selfsigned_registry_certfiles: true
 use_containerized_registry: true
+
+# Load balancer Config
 provision_nginx: true
 ign_repos_name: 'ign-repos'
 ign_iso_repos_name: 'rhcos-isos'
 nginx_root_directory: "/opt/rh/rh-nginx116/root/usr/share/nginx/html"
 nginx_conf: "/etc/opt/rh/rh-nginx116/nginx/nginx.conf"
+nginx_config_dir: '/etc/nginx'
+nginx_container_name: 'nginx'
+nginx_container_image: 'quay.io/cloudctl/nginx'
+use_containerized_nginx: 'false'
 
 # OCP Cluster Config
 ocp_cluster_name: '{{ vault_ocp_cluster_name }}'

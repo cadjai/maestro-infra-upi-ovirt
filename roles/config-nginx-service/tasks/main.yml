@@ -1,0 +1,74 @@
+---
+# tasks file for config-nginx-service
+- name: '{{ ansible_name_module }} | Ensure SELinux ports are properly configured'
+  seport:
+    ports: 80
+    proto: "{{ item }}"
+    setype: http_port_t
+    state: present
+  loop:
+    - tcp
+    - udp
+
+- name: '{{ ansible_name_module }} | Ensure Firewalld is enabled'
+  systemd:
+    name: firewalld
+    state: started
+    enabled: yes
+
+- name: '{{ ansible_name_module }} | Enable appropriates port on public zone'
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    zone: public
+    immediate: yes
+    state: enabled
+  loop:
+    - 80/tcp
+
+- name: '{{ ansible_name_module }} | Enable appropriates port on internal zone'
+  firewalld:
+    port: "{{ item }}"
+    permanent: yes
+    zone: internal
+    immediate: yes
+    state: enabled
+  loop:
+    - 80/tcp
+
+- name: Create nginx config directories
+  file:
+    state: directory
+    path: "{{ item }}"
+    mode: 0755
+    owner: root
+    group: root
+  with_items:
+    - "{{ nginx_config_dir }}"
+    #- "{{ nginx_certs_dir }}"
+
+- name: '{{ ansible_name_module }} | Set Hostname if not already set'
+  when:
+    - not nginx_host_fqdn is defined or nginx_host_fqdn == ""
+  block:
+    - name: Get hostname
+      shell: hostnamectl --static
+      register: nginx_hostname
+
+    - name: Get hostname
+      set_fact:
+        nginx_host_fqdn: "{{ nginx_hostname.stdout }}"
+
+#- name: Import tasks to create self signed certificate
+#  include_tasks: generate-certificate.yml 
+
+- name: '{{ ansible_name_module }} | Import tasks to install RPM based nginx'
+  include_tasks: deploy-rpm.yml
+  when:
+    - not use_containerized_nginx is defined or not use_containerized_nginx | bool
+
+- name: '{{ ansible_name_module }} | Import tasks to install containerized nginx'
+  include_tasks: deploy-containerized.yml
+  when:
+    - use_containerized_nginx is defined
+    - use_containerized_nginx | bool

@@ -1,0 +1,163 @@
+---
+# tasks file for nginx-loadbalancer-service
+- name: Ensure the CA Cert file does not already exist
+  stat:
+    path: "{{ ca_certfile }}"
+  delegate_to: 'localhost'
+  when:
+    - ca_certfile is defined
+    - not ca_certfile == ""
+  register: ca_cert_exist
+
+- name: Ensure the CA key file does not already exist
+  stat:
+    path: "{{ ca_keyfile }}"
+  delegate_to: 'localhost'
+  when:
+    - ca_keyfile is defined
+    - not ca_keyfile == ""
+  register: ca_key_exist
+
+- name: Copy the CA certificate file to the LB host
+  copy:
+    src: "{{ ca_certfile }}"
+    dest: "{{ nginx_certs_dir }}/{{ nginx_ca_certfile }}"
+    mode: 0755
+  when:
+    - ca_cert_exist is defined
+    - ca_cert_exist.stat.exists
+
+- name: Copy the CA Key file to the LB host
+  copy:
+    src: "{{ ca_keyfile }}"
+    dest: "{{ nginx_certs_dir }}/{{ nginx_ca_keyfile }}"
+    mode: 0755
+  when:
+    - ca_key_exist is defined
+    - ca_key_exist.stat.exists
+
+- name: Generate Self signed CA certificate
+  when:
+    - ca_cert_exist is defined
+    - not ca_cert_exist.stat.exists
+    - ca_key_exist is defined
+    - not ca_key_exist.stat.exists
+  block:
+    - name: Generate Private Key for Self Signed CA
+      openssl_privatekey:
+        path: "{{ nginx_certs_dir }}/{{ nginx_ca_keyfile }}"
+        size: 4096
+        type: RSA
+
+    - name: Generate The CSR for the CA certificate
+      openssl_csr:
+        path: "{{ nginx_certs_dir }}/{{ nginx_ca_csrfile }}"
+        privatekey_path: "{{ nginx_certs_dir }}/{{ nginx_ca_keyfile }}"
+        common_name: "{{ nginx_host_fqdn }}-CA"
+        country_name: "{{ cert_country }}"
+        locality_name: "{{ cert_locality }}"
+        state_or_province_name: "{{ cert_state }}"
+        organization_name: "{{ cert_org }}"
+        organizational_unit_name: "{{ cert_org_unit }}"
+        basic_constraints:
+          - CA:TRUE
+
+    - name: Generate Self signed CA certificate
+      openssl_certificate:
+        path: "{{ nginx_certs_dir }}/{{ nginx_ca_certfile }}"
+        privatekey_path: "{{ nginx_certs_dir }}/{{ nginx_ca_keyfile }}"
+        csr_path: "{{ nginx_certs_dir }}/{{ nginx_ca_csrfile }}"
+        provider: selfsigned
+        key_usage:
+          - critical 
+          - keyCertSign
+          - cRLSign
+        key_usage_strict: true
+      
+- name: Ensure the Cert file does not already exist
+  stat:
+    path: "{{ nginx_certfile }}"
+  delegate_to: 'localhost'
+  when:
+    - nginx_certfile is defined
+    - not nginx_certfile == ""
+  register: cert_exist
+
+- name: Ensure the Key file does not already exist
+  stat:
+    path: "{{ nginx_certkeyfile }}"
+  delegate_to: 'localhost'
+  when:
+    - nginx_certkeyfile is defined
+    - not nginx_certkeyfile == ""
+  register: key_exist
+
+- name: Copy the certificate file to the LB host
+  copy:
+    src: "{{ nginx_certfile }}"
+    dest: "{{ nginx_certs_dir }}/{{ nginx_certfile }}"
+    mode: 0755
+  when:
+    - cert_exist is defined
+    - cert_exist.stat.exists
+
+- name: Copy the Key file to the LB host
+  copy:
+    src: "{{ nginx_certkeyfile }}"
+    dest: "{{ nginx_certs_dir }}/{{ nginx_certkeyfile }}"
+    mode: 0755
+  when:
+    - key_exist is defined
+    - key_exist.stat.exists
+
+- name: Generate Self signed certificate
+  when:
+    - cert_exist is defined
+    - not cert_exist.stat.exists
+    - key_exist is defined
+    - not key_exist.stat.exists
+  block:
+    - name: Generate Private Key for the lb certificate 
+      openssl_privatekey:
+        path: "{{ nginx_certs_dir }}/{{ nginx_certkeyfile }}"
+        size: 4096
+        type: RSA
+
+    - name: Generate The CSR for the lb certificate
+      openssl_csr:
+        path: "{{ nginx_certs_dir }}/{{ nginx_certcsrfile }}"
+        privatekey_path: "{{ nginx_certs_dir }}/{{ nginx_certkeyfile }}"
+        country_name: "{{ cert_country }}"
+        locality_name: "{{ cert_locality }}"
+        state_or_province_name: "{{ cert_state }}"
+        organization_name: "{{ cert_org }}"
+        organizational_unit_name: "{{ cert_org_unit }}"
+        common_name: "{{ nginx_host_fqdn }}"
+        subject_alt_name: "DNS:{{ nginx_host_fqdn }}"
+
+    - name: Generate Self signed LB certificate
+      openssl_certificate:
+        path: "{{ nginx_certs_dir }}/{{ nginx_certfile }}"
+        csr_path: "{{ nginx_certs_dir }}/{{ nginx_certcsrfile }}"
+        ownca_path: "{{ nginx_certs_dir }}/{{ nginx_ca_certfile }}"
+        ownca_privatekey_path: "{{ nginx_certs_dir }}/{{ nginx_ca_keyfile }}"
+        provider: ownca
+      register: selfsigned_cert_created
+
+- name: Check that the CA file was successfully created in one of the steps above
+  stat:
+    path: "{{ nginx_certs_dir }}/{{ nginx_ca_certfile | basename }}"
+  register: ca_cert_file
+
+- name: Trust the LB CA Cert from above
+  when:
+    - ca_cert_file is defined 
+    - ca_cert_file.stat.isreg 
+  block:
+    - name: Copy the LB CA cert from one of the steps above to the to Cert anchor folder so this host can trust it
+      command: "cp {{ nginx_certs_dir }}/{{ nginx_ca_certfile | basename }} /etc/pki/ca-trust/source/anchors/{{ nginx_ca_certfile | basename }}" 
+      register: cert_copied
+    
+    - name: Update Ca DB store to trust downloaded CA from above
+      command: update-ca-trust extract
+      register: cadb_updated

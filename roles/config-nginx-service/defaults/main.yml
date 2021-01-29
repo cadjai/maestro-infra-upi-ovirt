@@ -1,0 +1,8 @@
+---
+# defaults file for config-nginx-service
+ansible_name_module: 'config-nginx-service'
+nginx_config_dir: '/etc/nginx/conf.d'
+nginx_root_dir: '/usr/share/nginx/html'
+use_containerized_nginx: true
+nginx_container_image: 'quay.io/cloudctl/nginx'
+nginx_container_name: 'nginx'
