@@ -1,5 +1,0 @@
-vm_cpu_cores: 1 
-vm_cpu_sockets: 2
-vm_memory: 8192
-ignition_file_suffix: "worker.ign"
-custom_script: "/tmp/custom-script.json"

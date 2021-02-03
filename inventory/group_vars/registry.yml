@@ -1,8 +1,0 @@
-vm_memory: 4096 
-vm_cpu_cores: 2
-vm_cpu_sockets: 2
-attach_additional_disks: true
-additional_disks:
-  - { name: docker, size: 30 }
-  - { name: registry, size: 50 }
-
