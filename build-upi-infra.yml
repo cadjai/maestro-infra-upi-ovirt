@@ -11,7 +11,7 @@
     instance_dir_suffix: "-node-search"
     search_dir_suffix: "node-search"
     instance_file_suffix: "-search"
-    instance_inventory_file: "infra"
+    instance_inventory_file: "infra.yml"
     instance_role_groups: 
       - lb
       - registry

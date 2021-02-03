@@ -50,11 +50,7 @@
       loop: "{{ instance_search_paths }}"
       register: statefiles_set
     
-    - name: Print Lookup output
-      debug:
-        var: statefiles_set
-    
-    - name: Set json file fact
+    - name: '{{ ansible_name_module }} | set_fact | Set json file fact'
       set_fact:
         instance_ips: "{{ statefiles_set | json_query(ipquery) }}"
         instance_names: "{{ statefiles_set | json_query(namequery) }}"
@@ -65,16 +61,15 @@
         query: "results[*].ansible_facts.*.resources[][*].instances[][].attributes.* | { name: [][].name, ipaddr: [][].reported_devices[?name=='eth0'].ips[][?version=='v4'].address[]}"
       register: statejdata_out
     
-    - name: Set inventory format
+    - name: '{{ ansible_name_module }} | set_fact | Set inventory format'
       set_fact:
         new_instance_group: "{{ dict(instance_names | zip (instance_ips)) }}"
-    
+
     - name: '{{ ansible_name_module }} | add_host | create in memory host group to run subsequent plays'
       add_host:
         name: "{{ item.key }}"
         groups:
           - "{{ 'new' + (item.key.split('-')[1] | regex_replace('\\d','')) }}"
-          - "{{ instance_group }}"
         ansible_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
         ansible_ssh_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
         ansible_sudo_pass: "{{ hostvars[item.key]['vm_rootpw'] | d(vm_rootpw) }}"
@@ -83,14 +78,15 @@
         instance_name: "{{ item.key }}"
         ansible_host: "{{ item.value }}"
         ansible_connection: 'ssh'
+        additional_disks: "{{ hostvars[item.key]['additional_disks'] | d([]) }}"
       loop: "{{ new_instance_group | dict2items }}"
       when:
         - new_instance_group is defined
       register: hostadd_out
     
-    - name:
+    - name: '{{ ansible_name_module }} | template | create infra static inventory'
       template:
-        src: "templates/inventory/instances.j2"
+        src: "templates/inventory/instances-yaml.j2"
         dest: "{{ inventory_dir }}/{{ instance_inventory_file }}"
         mode: '755'
       when:
