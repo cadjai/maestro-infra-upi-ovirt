@@ -13,6 +13,9 @@
       import_role:
         name: config-host-to-run-containerized-service
 
+    - name: '{{ ansible_name_module }} | import_tasks | config-drives.yml'
+      import_tasks: config-drives.yml
+
     - name: '{{ ansible_name_module }} | file | registry local directory'
       file:
         path: "{{ registry_ca_local_dir }}"
