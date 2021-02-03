@@ -3,9 +3,9 @@ roles:
   #- src: https://github.com/rhtconsulting/ansible-role_haproxy.git
   #  scm: git
   #  name: loadbalancer
-  - src: https://github.com/geerlingguy/ansible-role-haproxy.git 
-    scm: git
-    name: loadbalancer
+  #- src: https://github.com/geerlingguy/ansible-role-haproxy.git 
+  #  scm: git
+  #  name: loadbalancer
   - src: https://github.com/RedHatGov/ansible-idm.git
     scm: git
     name: idm 
