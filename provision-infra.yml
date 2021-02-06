@@ -18,7 +18,10 @@
 - import_playbook: setup-infra-resources.yml        # Configure Terraform modules for the UPI infra nodes
 - import_playbook: build-upi-infra.yml        # Run Terraform commands to provision UPI infra nodes
 - import_playbook: yum-repo-config.yml        # Register the nodes with a yum repo server or satellite
-- import_playbook: dns-clients.yml    # Register all hosts with the dns if necessary
+- import_playbook: ipa-clients.yml    # Register all hosts with the dns if necessary
+  when:
+    - register_with_ipa is defined
+    - register_with_ipa | bool == true 
 - import_playbook: loadbalancer.yml        # Configure loadbalancer if necessary 
   when:
     - "'lb' in groups.keys()"

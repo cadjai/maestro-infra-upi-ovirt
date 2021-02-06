@@ -18,7 +18,7 @@ vault_base_domain: ""
 # DNS Client Config
 vault_ipaclient_servers: ""
 vault_ipaclient_install_packages: ""
-#vault_ipaadmin_principal: ""
+vault_ipaadmin_principal: ""
 vault_ipaadmin_password: ""
 vault_ipaserver_domain: ""
 vault_ipaclient_domain: ""

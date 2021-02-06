@@ -94,6 +94,7 @@ ipaclient_domain: "{{ vault_ipaclient_domain }}"
 ipaserver_realm: "{{ vault_ipaserver_realm }}"
 ipaclient_ca_cert_file: 'files/ipa-ca.crt'
 ipaclient_hostname: "{{ vault_ipaclient_hostname }}"
+register_with_ipa: 'false'
 
 # Load balancer Config
 kube_api_port: 6443

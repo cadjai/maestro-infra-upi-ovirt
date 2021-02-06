@@ -9,12 +9,12 @@ roles:
   - src: https://github.com/RedHatGov/ansible-idm.git
     scm: git
     name: idm 
-  - src: https://github.com/freeipa/ansible-freeipa.git 
-    scm: git
-    name: ipaclient 
-  - src: https://github.com/jaredhocutt/ansible-freeipa-ipaclient.git
-    scm: git
-    name: jipaclient
+  #- src: https://github.com/freeipa/ansible-freeipa.git 
+  #  scm: git
+  #  name: ipaclient 
+  #- src: https://github.com/jaredhocutt/ansible-freeipa-ipaclient.git
+  #  scm: git
+  #  name: jipaclient
   - src: https://github.com/the-paulus/redhat-subscription.git 
     scm: git
     name: rh_subscription

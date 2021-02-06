@@ -1,0 +1,68 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: Register clients with IPA Server
+  hosts: localhost 
+  become: yes
+  remote_user: "{{ ansible_user }}"
+  vars:
+    module: "Register DNS Client"
+    instance_group: "infra"
+  vars_files:
+    - 'vars/vault.yml'
+    - 'vars/global.yml'
+  tasks:
+    - name: Add host to IPA
+      ipa_host:
+        name: "{{ item }}.{{ base_domain }}"
+        ip_address: "{{ hostvars[item]['ansible_host'] }}"
+        ipa_host: "{{ ipaclient_servers }}"
+        ipa_port: 443
+        ipa_user: "{{ ipaadmin_principal }}"
+        ipa_pass: "{{ ipaadmin_password }}"
+        update_dns: true
+        validate_certs: false
+      with_items:
+        - "{{ groups[instance_group] }}"
+      failed_when:
+        - ipa_client_added is defined
+        - ipa_client_added.msg is defined
+        - "not 'no modifications to be performed' in ipa_client_added.msg and not 'Reverse record for IP address' in ipa_client_added.msg"
+      register: ipa_client_added
+
+    - name: Add DNS Record for client host
+      ipa_dnsrecord:
+        ipa_host: "{{ ipaclient_servers }}"
+        ipa_port: 443 
+        ipa_prot: "https"
+        ipa_user: "{{ ipaadmin_principal }}"
+        ipa_pass: "{{ ipaadmin_password }}"
+        zone_name: "{{ base_domain }}"
+        record_name: "{{ item }}"
+        record_type: 'A'
+        record_value: "{{ hostvars[item]['ansible_host'] }}"
+        state: present
+        validate_certs: false
+      with_items:
+        - "{{ groups[instance_group] }}"
+      register: ipa_client_dns_added
+
+    - name: Add Reverse Lookup record for client host
+      ipa_dnsrecord:
+        ipa_host: "{{ ipaclient_servers }}"
+        ipa_port: 443 
+        ipa_prot: "https"
+        ipa_user: "{{ ipaadmin_principal }}"
+        ipa_pass: "{{ ipaadmin_password }}"
+        zone_name: "{{ (hostvars[item]['ansible_host'].split('.')[0:3] | join('.') | ipaddr('revdns')).split('.')[1:6] | join('.')}}"
+        record_name: "{{ hostvars[item]['ansible_host'].split('.')[3] | int }}"
+        record_type: 'PTR'
+        record_value: "{{ item }}.{{ base_domain }}."
+        validate_certs: false
+      with_items:
+        - "{{ groups[instance_group] }}"
+      failed_when:
+        - ipa_client_revrec_created is defined
+        - ipa_client_revrec_created.msg is defined
+        - "not 'no modifications to be performed' in ipa_client_revrec_created.msg and not 'Reverse record for IP address' in ipa_client_revrec_created.msg"
+      register: ipa_client_revrec_created
+
+
