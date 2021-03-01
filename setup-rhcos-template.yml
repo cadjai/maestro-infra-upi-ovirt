@@ -11,6 +11,8 @@
           - "'registry' in groups.keys() or 'nginx_hosts' in groups.keys() or 'newregistry' in groups.keys()"
           - "(groups.registry is defined and groups.registry | length > 0) or (groups.newregistry is defined and groups.newregistry | length > 0) or (groups.nginx_hosts is defined and groups.nginx_hosts | length > 0)"
         msg: "An nginx host is required. It can be an existing one if a new one is not being created."
+      when:
+        - "'http' in rhcos_image_url"
 
 - name: ' Konductor | Provision UPI Infra | Build Ovirt Nodes'
   hosts: localhost
