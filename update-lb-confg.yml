@@ -19,6 +19,9 @@
         backup: yes
       register: haproxycfg_copied
 
+      #    - name: '{{ ansible_name_module }} | Restart HAProxy '
+      #shell: "systemctl restart haproxy"
+
     - name: '{{ ansible_name_module }} | Restart the HAProxy service'
       systemd:
         name: haproxy
