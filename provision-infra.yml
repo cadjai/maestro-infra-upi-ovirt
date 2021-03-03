@@ -26,5 +26,5 @@
 - import_playbook: nginx.yml   # Configure a web server on Registry host if necessary
 - import_playbook: ignition.yml   # Generate and stage ignition config to be pushed to the host
 - import_playbook: publish-ignition.yml   # Publish ignition files to the web server host
-- import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces
+  #- import_playbook: update-lb-confg.yml   # Update LB config to reflect newly added cluster resurces
   
