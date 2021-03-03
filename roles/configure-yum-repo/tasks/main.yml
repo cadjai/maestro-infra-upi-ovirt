@@ -55,6 +55,7 @@
     - name: '{{ ansible_name_module }} | Download satellite katello-rpm and install | yum | katello.rpm'
       yum:
         name: 'http://{{ satellite_server }}/pub/katello-ca-consumer-latest.noarch.rpm'
+        disable_gpg_check: true
         state: present
 
     - name: '{{ ansible_name_module }} | Register client with Satellite | Role | RH Subscription' 
