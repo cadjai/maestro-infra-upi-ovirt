@@ -1,0 +1,12 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Configure Drives' 
+  hosts: local
+  vars_files:
+    - 'vars/vault.yml'
+    - 'vars/global.yml'
+  vars:
+    module: "configure drives"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+
+  roles:
+    - { role: configure-drive } 
