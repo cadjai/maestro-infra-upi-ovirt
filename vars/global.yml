@@ -193,7 +193,7 @@ terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
 terraform_provider_config_file: "{{ local_home }}/.terraformrc"
 
 ### RHEL Template variables  ###
-host_rhel_images: true
+host_rhel_images: false
 rhel_iso_repos_name: 'rhel-isos'
 ### Only qcow2 images seems to work with rhev template provisioning
 #rhel_template_image_name: 'rhel-server-7.9-x86_64-kvm.qcow2'
@@ -206,7 +206,7 @@ rhel_image_iso_names:
 #rhel_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ rhel_iso_repos_name }}/{{ rhel_template_image_name }}"
 rhel_image_url: "{{ dir_deploy }}/nginx-images/{{ rhel_template_image_name }}"
 create_rhel_template: true
-rhel_vm_root_disk_size: 50
+rhel_vm_root_disk_size: 100
 
 ### Terraform provider disconnected vars
 terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
