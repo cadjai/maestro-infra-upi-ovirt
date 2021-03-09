@@ -42,7 +42,7 @@
     vm_dns_search: "{{ dns_search }}"
     nic_boot_proto: "{{ nic_boot_proto }}"
     base_domain: "{{ base_domain }}"
-    vm_host_subdomain: "{{ host_subdomain }}"
+    vm_host_subdomain: "{{omit if ( not host_subdomain is defined or host_subdomain == '') else host_subdomain }}"
     vm_rootpw: "{{ vm_rootpw }}"
     vm_user: "{{ vm_user }}"
     vm_authorized_ssh_key: "{{ hostvars[item].authorized_ssh_key | d(authorized_ssh_key) }}"

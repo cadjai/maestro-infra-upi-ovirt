@@ -69,7 +69,7 @@
       add_host:
         name: "{{ item.key }}"
         groups:
-          - "{{ 'new' + (item.key.split('-')[1] | regex_replace('\\d','')) }}"
+          - "{{ 'new' + ((item.key.split('-')[1] if '-' in item.key else item.key) | regex_replace('\\d','')) }}"
         ansible_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
         ansible_ssh_user: "{{ hostvars[item.key]['vm_user'] | d(ansible_user) }}"
         ansible_sudo_pass: "{{ hostvars[item.key]['vm_rootpw'] | d(vm_rootpw) }}"
@@ -82,6 +82,7 @@
       loop: "{{ new_instance_group | dict2items }}"
       when:
         - new_instance_group is defined
+        - item.key in instance_role_groups
       register: hostadd_out
     
     - name: '{{ ansible_name_module }} | template | create infra static inventory'
