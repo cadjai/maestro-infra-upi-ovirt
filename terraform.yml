@@ -6,7 +6,7 @@
   vars:
     module: "terraform"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
-    ver_terraform_package: "0.12.29"
+    ver_terraform_package: "0.12.30"
   tasks:
 
     - name: '{{ ansible_name_module }} | shell:curl | Retrieve Terraform package version'
@@ -26,25 +26,40 @@
         - terraform_ver.rc == 0 
         - terraform_ver.stdout is defined
 
-    - name: '{{ ansible_name_module }} | unarchive | terraform'
+    - name: '{{ ansible_name_module }} | get_url | download terraform'
       become: yes
-      unarchive:
-        src: https://releases.hashicorp.com/terraform/{{ ver_terraform_package }}/terraform_{{ ver_terraform_package }}_linux_amd64.zip
-        dest: /usr/local/bin
-        remote_src: yes
-        validate_certs: false
+      get_url:
+        url: https://releases.hashicorp.com/terraform/{{ ver_terraform_package }}/terraform_{{ ver_terraform_package }}_linux_amd64.zip
+        dest: /tmp/
+        force: yes
       when:
         - ver_terraform_package is defined 
         - not ver_terraform_package == ""
+      register: terraform_downloaded
+
+    - name: '{{ ansible_name_module }} | unarchive | terraform'
+      become: yes
+      command: >
+        unzip "{{ terraform_downloaded.dest }}" -d /usr/local/bin
+      #unarchive:
+      #  src: "{{ terraform_downloaded.dest }}"
+      #  dest: /usr/local/bin
+      #  mode: 0755
+      #  validate_certs: false
+      when:
+        - ver_terraform_package is defined 
+        - not ver_terraform_package == ""
+        - terraform_downloaded is defined
+        - terraform_downloaded.dest is defined and terraform_downloaded.dest != ''
       register: terraform_installed
          
-    - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform modules'
-      shell:
-        cmd: terraform init
-        chdir: "{{ item.dest }}"
-      with_items:
-        - "{{ terraformrepos | default(terraform_provider_dir) }}"
-      when:
-        - terraform_installed is defined
-        - terraform_installed.changed | bool
-      register: terraform_init
+    #- name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform modules'
+    #  shell:
+    #    cmd: terraform init
+    #    chdir: "{{ item.dest }}"
+    #  with_items:
+    #    - "{{ terraformrepos | default(terraform_provider_dir) }}"
+    #  when:
+    #    - terraform_installed is defined
+    #    - terraform_installed.changed | bool
+    #  register: terraform_init
