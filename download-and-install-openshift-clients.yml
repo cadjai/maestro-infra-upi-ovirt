@@ -1,0 +1,61 @@
+#!/usr/local/bin/ansible-playbook --inventory=inventory
+- name: 'RedHat | Download and install OCP Clients' 
+  hosts: localhost
+  vars_files:
+  vars:
+    module: "Download and install clients"
+    ansible_name: "Collector"
+    ansible_user: "{{ lookup('env', 'USER') }}"
+    ansible_name_module: "{{ ansible_name }} | {{ module }}"
+    openshift_mirror_url: "https://mirror.openshift.com/pub/openshift-v4/clients/ocp"
+    openshift_clients_pkg_suffix: ".tar.gz"
+    ocp_clients:
+      oc:
+        pkg_prefix: "openshift-client-linux-"
+        version: "4.7.1"
+        install: true
+      oc_install:
+        pkg_prefix: "openshift-install-linux-"
+        version: "4.7.1"
+        install: true
+      opm:
+        pkg_prefix: "opm-linux-"
+        version: "4.7.1"
+        install: true
+      grpcurl:
+        pkg_name: "grpcurl_1.8.0_linux_x86_64"
+        version: "v1.8.0"
+        install: true
+        url: "https://github.com/fullstorydev/grpcurl/releases/download"
+
+  tasks:
+    - name: '{{ ansible_name_module }} | Download OC clients'
+      get_url:
+        url: "{{ download_url }}/{{ item.value.version }}/{{ pkg_name }}{{ pkg_version }}{{ openshift_clients_pkg_suffix }}"
+        dest: /tmp/{{ pkg_name }}{{ pkg_version }}{{ openshift_clients_pkg_suffix }}
+        mode: 0666
+        force: yes
+      with_dict: 
+        - "{{ ocp_clients }}"
+      when:
+        - item.key is defined
+        - item.value.install is defined and item.value.install | bool
+        - (item.value.pkg_prefix is defined and item.value.pkg_prefix != '') or (item.value.pkg_name is defined and item.value.pkg_name != '')
+        - item.value.version is defined and item.value.version != '' 
+      vars:
+        download_url: "{{ item.value.url if item.value.url is defined and item.value.url != '' else openshift_mirror_url }}" 
+        pkg_name: "{{ item.value.pkg_name if (item.value.pkg_name is defined and item.value.pkg_name != '') else item.value.pkg_prefix }}"
+        pkg_version: "{{ item.value.version if item.value.pkg_name is undefined or item.value.pkg_name == '' else '' }}"
+      register: oc_client_downloaded
+
+    - name: '{{ ansible_name_module }} | Install OC client'
+      command: > 
+        tar zxvf {{ item.dest }} -C /usr/bin
+      become: yes
+      args:
+        warn: no 
+      loop: "{{ oc_client_downloaded.results }}"
+      when:
+        - item.dest is defined and item.dest != ''
+      register: oc_client_installed
+
