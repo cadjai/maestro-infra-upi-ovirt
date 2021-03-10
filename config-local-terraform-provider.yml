@@ -2,8 +2,8 @@
 - name: "Konductor | Provision UPI Infra | config-local-terraform-provider.yml"
   hosts: localhost
   vars_files:
-    #- 'vars/vault.yml'
-    #- 'vars/global.yml'
+    - 'vars/vault.yml'
+    - 'vars/global.yml'
   vars:
     module: "terraform-provider-local"
     config_default_terraform_provider: "true"
@@ -15,7 +15,7 @@
     terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins"
     terraform_provider_config_file: "{{ local_home }}/.terraformrc"
     terraform_provider_full_name: "terraform-provider-ovirt"
-    terraform_domain: "hashicorp.com"
+    terraform_domain: "myofflineregistry"
     terraform_namespace: "dev"
     terraform_providers:
       aws:
@@ -26,11 +26,12 @@
         version: "1.24.3"
       ovirt:
         version: "0.4.2"
+        default: true
       openstack:
         version: "1.35.0"
       google:
         version: "3.52.0"
-      ibm-cloud:
+      ibm:
         version: "1.19.0"
     terraform_provider_type: "linux_amd64"
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
@@ -77,19 +78,24 @@
             recurse: true
           with_dict:
             - "{{ terraform_providers }}" 
-          when:
-            - not ter_ver.stdout.split('v')[1] is version_compare('13.0.0', '<=')
+          #when:
+          #  - not ter_ver.stdout.split('v')[1] is version_compare('13.0.0', '<=')
 
         - name: '{{ ansible_name_module }} | shell:mv | for each provider '
-          shell: mv {{ terraform_provider_dir }}/provider-{{ item.key }} {{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }} 
+          shell: mv {{ terraform_provider_dir }}/terraform-provider-{{ item.key }} {{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }} 
           with_dict:
             - "{{ terraform_providers }}" 
-          when:
-            - not ter_ver.stdout.split('v')[1] is version_compare('13.0.0', '<=')
+          #when:
+          #  - not ter_ver.stdout.split('v')[1] is version_compare('13.0.0', '<=')
+
+        - name: '{{ ansible_name_module }} | set_fact | set terraformrc config file'
+          set_fact:
+            tfrc_file_suffix: "-v{{ (ter_ver.stdout.split('v')[1]).split('.')[1] }}.j2"
+            tfrc_file_prefix: "terraformrc"
 
         - name: '{{ ansible_name_module }} | template | create terraform provider v14 config file'
           template:
-            src: "templates/terraform/terraformrc-v14.j2"
+            src: "templates/terraform/{{ tfrc_file_prefix }}{{ tfrc_file_suffix }}"
             dest: "{{ terraform_provider_dir }}/main.tf"
             mode: 0755
             force: yes
@@ -112,9 +118,13 @@
       block:
         - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform directory exist '
           file:
-            path: "{{ terraform_provider_dir }}"
+            path: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}"
             state: directory
             recurse: true
+          with_dict:
+            - "{{ terraform_providers }}" 
+          when:
+            - item.value.default is defined and item.value.default | bool
 
         - name: '{{ ansible_name_module }} | template | create terraformrc file'
           template:
@@ -125,16 +135,24 @@
         - name: '{{ ansible_name_module }} | template | create terraform provider file'
           template:
             src: "templates/terraform/provider-local-{{ terraform_provider_full_name.split('-')[2] }}.j2"
-            dest: "{{ terraform_provider_dir }}/main.tf"
+            dest: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}/main.tf"
             mode: 0755
             force: yes
+          with_dict:
+            - "{{ terraform_providers }}" 
+          when:
+            - item.value.default is defined and item.value.default | bool
 
         - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform provider module'
           shell:
             cmd: terraform init
-            chdir: "{{ terraform_provider_dir }}"
+            chdir: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}"
           failed_when:
             - terraform_init.rc > 1
             - " not 'not available for installation' in terraform_init.stderr "
+          with_dict:
+            - "{{ terraform_providers }}" 
+          when:
+            - item.value.default is defined and item.value.default | bool
           register: terraform_init
 
