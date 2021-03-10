@@ -162,3 +162,7 @@
         creates: "{{ tf_dir_bundle_location }}/{{ tf_binary_bundle_name }}"
         warn: false
         chdir: "{{ go_home_dir }}/bin/"
+
+    - name: '{{ ansible_name_module }} | reboot node'
+      reboot:
+      register: node_rebooted
