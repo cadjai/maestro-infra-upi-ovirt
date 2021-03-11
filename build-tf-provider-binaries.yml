@@ -165,4 +165,5 @@
 
     - name: '{{ ansible_name_module }} | reboot node'
       reboot:
+        reboot_timeout: 300
       register: node_rebooted
