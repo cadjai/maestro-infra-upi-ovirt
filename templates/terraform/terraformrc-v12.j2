@@ -1,0 +1,10 @@
+terraform {
+  required_providers {
+{% for prov,pvalue in terraform_providers.items() %}
+
+    {{ prov }} = "~> {{ pvalue.version }}"
+
+    }
+{% endfor %}
+  }
+}

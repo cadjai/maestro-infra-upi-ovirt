@@ -27,10 +27,6 @@
     - tf_apply.results[0].rc is defined
     - tf_apply.results[0].rc == 0
   block:
-    - name: Print Terraform apply output
-      debug:
-        var: tf_apply
-    
     - name: '{{ ansible_name_module }} | find | *-node-search '
       find:
         file_type: directory
@@ -82,7 +78,7 @@
       loop: "{{ new_instance_group | dict2items }}"
       when:
         - new_instance_group is defined
-        - item.key in instance_role_groups
+        - hostvars[item.key].group_names[0] in instance_role_groups or (hostvars[item.key].group_names[1] is defined and hostvars[item.key].group_names[1] in instance_role_groups) or (hostvars[item.key].group_names[2] is defined and hostvars[item.key].group_names[2] in instance_role_groups)
       register: hostadd_out
     
     - name: '{{ ansible_name_module }} | template | create infra static inventory'
