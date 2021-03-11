@@ -3,7 +3,7 @@ terraform {
 {% for prov,pvalue in terraform_providers.items() %}
     {{ prov }} = {
       source = "{{ terraform_domain }}/{{ terraform_namespace }}/{{ prov }}"
-      version = "{{ pvalue.version }}"
+      version = "~> {{ pvalue.version }}"
     }
 {% endfor %}
   }
