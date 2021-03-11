@@ -118,9 +118,15 @@
       block:
         - name: '{{ ansible_name_module }} | file:state=directory | Ensure terraform directory exist '
           file:
-            path: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}"
+            path: "{{ terraform_provider_dir }}/{{ terraform_provider_type }}"
             state: directory
             recurse: true
+
+        - name: '{{ ansible_name_module }} | copy | provider binary to default location '
+          copy: 
+            src: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}/terraform-provider-{{ item.key }}"
+            dest: "{{ terraform_provider_dir }}/{{ terraform_provider_type }}" 
+            mode: '0755'
           with_dict:
             - "{{ terraform_providers }}" 
           when:
@@ -135,24 +141,16 @@
         - name: '{{ ansible_name_module }} | template | create terraform provider file'
           template:
             src: "templates/terraform/provider-local-{{ terraform_provider_full_name.split('-')[2] }}.j2"
-            dest: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}/main.tf"
+            dest: "{{ terraform_provider_dir }}/{{ terraform_provider_type }}/main.tf"
             mode: 0755
             force: yes
-          with_dict:
-            - "{{ terraform_providers }}" 
-          when:
-            - item.value.default is defined and item.value.default | bool
 
         - name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform provider module'
           shell:
             cmd: terraform init
-            chdir: "{{ terraform_provider_dir }}/{{ terraform_domain }}/{{ terraform_namespace }}/{{ item.key }}/{{ item.value.version }}/{{ terraform_provider_type }}"
+            chdir: "{{ terraform_provider_dir }}/{{ terraform_provider_type }}"
           failed_when:
             - terraform_init.rc > 1
             - " not 'not available for installation' in terraform_init.stderr "
-          with_dict:
-            - "{{ terraform_providers }}" 
-          when:
-            - item.value.default is defined and item.value.default | bool
           register: terraform_init
 
