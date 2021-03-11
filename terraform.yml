@@ -1,6 +1,6 @@
 #!/usr/bin/ansible-playbook --inventory=inventory
 - name: "Konductor | Provision UPI Infra | terraform.yml"
-  hosts: local
+  hosts: localhost
   vars_files:
     - 'vars/global.yml'
   vars:
@@ -8,58 +8,7 @@
     ansible_name_module: "{{ ansible_name }} | {{ module }}"
     ver_terraform_package: "0.12.30"
   tasks:
-
-    - name: '{{ ansible_name_module }} | shell:curl | Retrieve Terraform package version'
-      shell: >
-        curl -S "https://api.github.com/repos/hashicorp/terraform/releases/latest" \
-          | grep '"tag_name":' | cut -d ':' -f2 | tr -d '",v' | awk '{$1=$1};1'
-      when:
-        - not ver_terraform_package is defined or ver_terraform_package == ""
-      register: terraform_ver
-      
-    - name: '{{ ansible_name_module }} | set_fact | Set Terraform Version Package'
-      set_fact:
-        ver_terraform_package: "{{ terraform_ver.stdout }}"
-      when:
-        - not ver_terraform_package is defined or ver_terraform_package == ""
-        - terraform_ver is defined
-        - terraform_ver.rc == 0 
-        - terraform_ver.stdout is defined
-
-    - name: '{{ ansible_name_module }} | get_url | download terraform'
-      become: yes
-      get_url:
-        url: https://releases.hashicorp.com/terraform/{{ ver_terraform_package }}/terraform_{{ ver_terraform_package }}_linux_amd64.zip
-        dest: /tmp/
-        force: yes
-      when:
-        - ver_terraform_package is defined 
-        - not ver_terraform_package == ""
-      register: terraform_downloaded
-
-    - name: '{{ ansible_name_module }} | unarchive | terraform'
-      become: yes
-      command: >
-        unzip "{{ terraform_downloaded.dest }}" -d /usr/local/bin
-      #unarchive:
-      #  src: "{{ terraform_downloaded.dest }}"
-      #  dest: /usr/local/bin
-      #  mode: 0755
-      #  validate_certs: false
-      when:
-        - ver_terraform_package is defined 
-        - not ver_terraform_package == ""
-        - terraform_downloaded is defined
-        - terraform_downloaded.dest is defined and terraform_downloaded.dest != ''
-      register: terraform_installed
-         
-    #- name: '{{ ansible_name_module }} | shell:terraform.init | Initilize terraform modules'
-    #  shell:
-    #    cmd: terraform init
-    #    chdir: "{{ item.dest }}"
-    #  with_items:
-    #    - "{{ terraformrepos | default(terraform_provider_dir) }}"
-    #  when:
-    #    - terraform_installed is defined
-    #    - terraform_installed.changed | bool
-    #  register: terraform_init
+    - name: Import terraform installation tasks
+      import_role:
+        name: configure-terraform-for-disconnected
+        tasks_from: install-terraform-connected.yml

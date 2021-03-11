@@ -24,6 +24,9 @@ roles:
   - src: https://github.com/cadjai/mirror-ocp4-contents-for-artifactory.git 
     scm: git
     name: mirror-ocp4-content-artifactory 
+  - src: https://github.com/cadjai/configure-terraform-for-disconnected.git 
+    scm: git
+    name: configure-terraform-for-disconnected
 
 collections:
   #- name: https://github.com/nginxinc/ansible-collection-nginx.git
