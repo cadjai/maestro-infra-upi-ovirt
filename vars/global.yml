@@ -32,14 +32,12 @@ authorized_ssh_key: "{{ sshkeys_pub_string }}"
 #Vm to skip
 vm_skip_list:
   - localhost
+  - local
 
 # DNS Info
 base_domain: '{{ vault_base_domain }}'
 nic_boot_proto: 'dhcp'
 
-#####################################################################################################
-# End of user configurable variables
-#####################################################################################################
 # OpenShift Version
 version_openshift: "{{ lookup('env', 'varVerOpenshift') }}"
 # openshift-install binary to run
@@ -94,7 +92,7 @@ ipaclient_domain: "{{ vault_ipaclient_domain }}"
 ipaserver_realm: "{{ vault_ipaserver_realm }}"
 ipaclient_ca_cert_file: 'files/ipa-ca.crt'
 ipaclient_hostname: "{{ vault_ipaclient_hostname }}"
-register_with_ipa: 'false'
+register_with_ipa: 'true'
 
 # Load balancer Config
 kube_api_port: 6443
@@ -112,7 +110,6 @@ haproxy_ca_csrfile: 'haproxy-ca.csr'
 haproxy_container_cert_dir: '/certs'
 haproxy_host_fqdn: ''
 
-#registry_host_fqdn: '{{ vault_registry_host_fqdn }}'
 registry_host_fqdn: "{{ vault_registry_host_fqdn }}"
 registry_secret: "{{ vault_registry_secret }}"
 registry_admin_username: "{{ vault_registry_admin_username }}"
@@ -146,22 +143,21 @@ ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
 ocp_master_count: 3
 ocp_worker_count: 2
 #rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
-rhcos_template_image_name: "rhcos-4.6.8-x86_64-openstack.x86_64.qcow2"
+rhcos_template_image_name: "rhcos-4.7.0-x86_64-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
-rhcos_image_version_major: "4.6"
+rhcos_image_version_major: "4.7"
 rhcos_image_version_minor: "latest"
 rhcos_image_iso_names: 
   - "rhcos-openstack.x86_64.qcow2.gz"
   - "rhcos-live.x86_64.iso"
-rhcos_image_url: "{{ dir_deploy }}/nginx-images/v4.6.8/{{ rhcos_template_image_name }}"
+rhcos_image_url: "{{ dir_deploy }}/nginx-images/v{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
 #rhcos_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
 #create_rhcos_template: false
 create_rhcos_template: true
-#oc_client_binary: "files/oc.tar.gz"
-oc_client_binary: "files/openshift-client-linux-4.6.4.tar.gz"
-ocp_release_version: 4.6.4
+oc_client_binary: "/tmp/openshift-client-linux-4.7.1.tar.gz"
+ocp_release_version: 4.7.0
 host_rhcos_images: false
-ignition_spec_version: "3.1.0"
+ignition_spec_version: "3.2.0"
 registry_container_auth_dir: '/auth'
 registry_container_cert_dir: '/certs'
 dir_bundle_location: "/data/bundle"
@@ -187,10 +183,6 @@ local_olm_repository: 'olm-mirror'
 source_operators_repository: 'redhat'
 source_operator_index: 'redhat-operator-index'
 source_operator_index_tag: 'v4.6'
-
-### Terraform provider disconnected vars
-terraform_provider_dir: "{{ local_home }}/.terraform.d/plugins/"
-terraform_provider_config_file: "{{ local_home }}/.terraformrc"
 
 ### RHEL Template variables  ###
 host_rhel_images: false
@@ -223,7 +215,8 @@ terraform_providers_repos:
     archive: 'https://github.com/hashicorp/terraform-provider-vsphere/archive/v1.24.3.tar.gz'
   ovirt:
     repo: 'https://github.com/ovirt/terraform-provider-ovirt/releases/latest'
-    archive: 'https://github.com/oVirt/terraform-provider-ovirt/archive/v0.4.2.tar.gz'
+    archive: 'https://github.com/oVirt/terraform-provider-ovirt/archive/master.zip'
+    #archive: 'https://github.com/oVirt/terraform-provider-ovirt/archive/v0.4.2.tar.gz'
   openstack:
     repo: 'https://github.com/terraform-provider-openstack/terraform-provider-openstack/releases/latest'
     archive: 'https://github.com/terraform-provider-openstack/terraform-provider-openstack/archive/v1.35.0.tar.gz'
@@ -240,3 +233,6 @@ go_home_dir: "{{ remote_home }}/go"
 tf_binary_bundle_name: "tf-providers-bundle.tar.gz"
 tf_dir_bundle_location: "/tmp"
                                     
+#####################################################################################################
+# End of user configurable variables
+#####################################################################################################
