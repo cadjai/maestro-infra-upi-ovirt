@@ -6,11 +6,11 @@
 {% if not host in vm_skip_list %}
 {% if '-' in host %}
 {% if host.split('-')[1] | regex_replace('\\d','') in grp %}
-{{ host }} ansible_host={{ hostvars[host]['ansible_host'] }} ansible_connection=ssh ansible_user={{ hostvars[host]['vm_user'] }} ansible_sudo_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} additional_disks={{ hostvars[host]['additional_disks'] | d ([]) }}
+{{ host }} ansible_host={{ hostvars[host]['ansible_host'] }} ansible_connection=ssh ansible_user={{ hostvars[host]['vm_user'] }} ansible_sudo_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} additional_disks=[{{ hostvars[host]['additional_disks'] | d ([]) | to_nice_yaml(indent=2) }}]
 
 {% endif %}
 {% elif host in grp %}
-{{ host }} ansible_host={{ hostvars[host]['ansible_host'] }} ansible_connection=ssh ansible_user={{ hostvars[host]['vm_user'] }} ansible_sudo_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} additional_disks={{ hostvars[host]['additional_disks'] | d ([]) }}
+{{ host }} ansible_host={{ hostvars[host]['ansible_host'] }} ansible_connection=ssh ansible_user={{ hostvars[host]['vm_user'] }} ansible_sudo_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} ansible_become_pass={{ hostvars[host]['vm_rootpw'] }} additional_disks=[{{ hostvars[host]['additional_disks'] | d ([]) | to_nice_yaml(indent=2) }}]
 
 {% endif %}
 {% endif %}
