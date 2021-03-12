@@ -18,6 +18,32 @@
           import_role:
             name: config-host-to-run-containerized-service
 
+        - name: Load container nginx image onto registy host if disconnected
+          when:
+            - disconnected is defined
+            - disconnected | bool
+          block:
+            - name: '{{ ansible_name_module }} | copy | nginx image to nginx host'
+              copy:
+                src: "/tmp/container-nginx-image.tar"
+                dest: "/tmp/container-nginx-image.tar"
+                force: yes
+              register: nginx_container_copied
+
+            - name: '{{ ansible_name_module }} | command:podman:load | load'
+              command: podman load -i /tmp/container-nginx-image.tar
+              register: nginx_container_loaded
+
+            - name: '{{ ansible_name_module }} | set_fact | Set loaded nginx container image name '
+              set_fact:
+                temp_container_nginx_image: "{{ nginx_container_loaded.stdout.split(' ')[2] }}"
+              when:
+                - nginx_container_loaded is defined
+                - nginx_container_loaded.rc == 0
+                - not nginx_container_loaded.failed | bool
+                - nginx_container_loaded is defined
+                - nginx_container_loaded.stdout != ""
+
         - name: '{{ ansible_name_module }} | import_role | config-nginx-service'
           import_role:
             name: config-nginx-service
