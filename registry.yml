@@ -16,12 +16,48 @@
     - name: '{{ ansible_name_module }} | import_tasks | config-drives.yml'
       import_role:
         name: configure-drive
+      when:
+        - configure_drive is defined
+        - configure_drive | bool 
+
+    - name: Load container registry image onto registy host if disconnected
+      when:
+        - disconnected is defined
+        - disconnected | bool 
+      block:
+        - name: '{{ ansible_name_module }} | copy | registry image to registry host'
+          copy:
+            src: "/tmp/container-registry-image.tar"
+            dest: "/tmp/container-registry-image.tar"
+            force: yes
+          register: registry_container_copied
+
+        - name: '{{ ansible_name_module }} | command:podman:load | load'
+          command: podman load -i /tmp/container-registry-image.tar
+          register: registry_container_loaded
+
+        - name: '{{ ansible_name_module }} | set_fact | Set loaded registry container image name '
+          set_fact:
+            temp_container_registry_image: "{{ registry_container_loaded.stdout.split(' ')[2] }}"
+          when:
+            - registry_container_loaded is defined
+            - registry_container_loaded.rc == 0
+            - not registry_container_loaded.failed | bool
+            - registry_container_loaded is defined
+            - registry_container_loaded.stdout != ""
 
     - name: '{{ ansible_name_module }} | file | registry local directory'
       file:
         path: "{{ registry_ca_local_dir }}"
         state: directory
         mode: 0755
+
+    ###################### Add task to configure selinux on host #####
+    # Had to add the following  ###################
+    ## ausearch -c 'entrypoint.sh' --raw | audit2allow -M my-entrypointsh
+    ## semodule -X 300 -i my-entrypointsh.pp
+    ####################################################
+
     - name: '{{ ansible_name_module }} | import_role | registry'
       import_role:
         name: registry
