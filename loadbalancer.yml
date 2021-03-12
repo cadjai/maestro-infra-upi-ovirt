@@ -12,6 +12,33 @@
       import_role:
         name: config-host-to-run-containerized-service
 
+    - name: Load container haproxy image onto registy host if disconnected
+      when:
+        - disconnected is defined
+        - disconnected | bool
+      block:
+        - name: '{{ ansible_name_module }} | copy | haproxy image to haproxy host'
+          copy:
+            src: "/tmp/container-haproxy-image.tar"
+            dest: "/tmp/container-haproxy-image.tar"
+            force: yes
+          register: haproxy_container_copied
+
+        - name: '{{ ansible_name_module }} | command:podman:load | load'
+          command: podman load -i /tmp/container-haproxy-image.tar
+          register: haproxy_container_loaded
+
+        - name: '{{ ansible_name_module }} | set_fact | Set loaded haproxy container image name '
+          set_fact:
+            temp_container_haproxy_image: "{{ haproxy_container_loaded.stdout.split(' ')[2] }}"
+          when:
+            - haproxy_container_loaded is defined
+            - haproxy_container_loaded.rc == 0
+            - not haproxy_container_loaded.failed | bool
+            - haproxy_container_loaded is defined
+            - haproxy_container_loaded.stdout != ""
+
+
     - name: '{{ ansible_name_module }} | import_role | haproxy-loadbalancer-service'
       import_role:
         name: haproxy-loadbalancer-service
