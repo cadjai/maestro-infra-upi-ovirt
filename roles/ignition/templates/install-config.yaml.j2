@@ -24,7 +24,17 @@ networking:
   serviceNetwork: 
   - {{ service_network_cidr | d('172.30.0.0/16') }}
 platform:
+{% if use_provider_api | d(false) | bool %}
+  ovirt:
+    api_vip: {{ api_vip }} 
+    ingress_vip: {{ ingress_vip }}
+    ovirt_cluster_id: {{ cluster_id }}
+    ovirt_storage_domain_id: {{ storage_domain_id }}
+    ovirt_network_name: ovirtmgmt
+    vnicProfileID: {{ vnic_profile_id }}
+{% else %}
   none: {}
+{% endif %}
 fips: false
 publish: External
 pullSecret: '{{ ocp_registry_pull_secret.stdout }}'
