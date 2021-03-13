@@ -5,6 +5,11 @@ ovirt_username: "{{ vault_ovirt_username }}"
 ovirt_password: "{{ vault_ovirt_password }}"
 storage_domain_id: "{{ vault_storage_domain_id }}"
 cluster_id: "{{ vault_cluster_id }}"
+### Only set the next four if you want to use the Provider API ###
+use_provider_api: 'false'
+vnic_profile_id: "{{ vault_vnic_profile_id }}"
+api_vip: "{{ vault_api_vip }}"
+ingress_vip: "{{ vault_ingress_vip }}"
 vm_template_id: "{{ vault_vm_template_id }}"
 coreos_vm_template_id: "{{ vault_coreos_vm_template_id }}"
 dns_search: "{{ vault_dns_search }}"
@@ -41,8 +46,8 @@ nic_boot_proto: 'dhcp'
 # OpenShift Version
 version_openshift: "{{ lookup('env', 'varVerOpenshift') }}"
 # openshift-install binary to run
-openshift_install_binary: /usr/local/bin/openshift-install 
-openshift_client_binary: /usr/local/bin/oc 
+openshift_install_binary: /usr/bin/openshift-install 
+openshift_client_binary: /usr/bin/oc 
 
 # Bash ENV Lookups
 local_home: "{{ lookup('env', 'HOME') }}"
@@ -142,6 +147,7 @@ registry_ca_local_name: "registry-ca.crt"
 ignition_file_hosting_url: "http://{{ registry_host_fqdn }}"
 ocp_master_count: 3
 ocp_worker_count: 2
+ocp_release_version: 4.7.0
 #rhcos_template_image_name: "rhcos-openstack.x86_64.qcow2"
 rhcos_template_image_name: "rhcos-4.7.0-x86_64-openstack.x86_64.qcow2"
 rhcos_image_mirror: "https://mirror.openshift.com/pub/openshift-v4/dependencies/rhcos"
@@ -152,37 +158,35 @@ rhcos_image_iso_names:
   - "rhcos-live.x86_64.iso"
 rhcos_image_url: "{{ dir_deploy }}/nginx-images/v{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
 #rhcos_image_url: "http://{{ groups.nginx_hosts[0] | d(groups.newregistry[0], true) }}.{{ ocp_cluster_basedomain }}/{{ ign_iso_repos_name }}/{{ ocp_release_version }}/{{ rhcos_template_image_name }}"
-#create_rhcos_template: false
 create_rhcos_template: true
 oc_client_binary: "/tmp/openshift-client-linux-4.7.1.tar.gz"
-ocp_release_version: 4.7.0
 host_rhcos_images: false
 ignition_spec_version: "3.2.0"
 registry_container_auth_dir: '/auth'
 registry_container_cert_dir: '/certs'
 dir_bundle_location: "/data/bundle"
 registry_container_name: 'mirror-registry'
-registry_container_image: 'docker.io/library/registry:2'
+registry_container_image: 'quay.io/cloudctl/registry'
 registry_container_dir: '/var/lib/registry'
-install_opm: "false"
-opm_client_binary: "files/opm"
-install_grpcurl: "false"
-grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
+#install_opm: "false"
+#opm_client_binary: "files/opm"
+#install_grpcurl: "false"
+#grpcurl_binary: "files/grpcurl_1.7.0_linux_x86_64.tar.gz"
 operator_registres_to_mirror:
   redhat-operators:
-    source: registry.redhat.io/redhat/redhat-operator-index:v4.6
+    source: registry.redhat.io/redhat/redhat-operator-index:v4.7
     container_port: 50051
     mirrored_operator_list: "3scale-operator,apicast-operator,amq-streams,businessautomation-operator,cluster-kube-descheduler-operator,cluster-logging,clusterresourceoverride,codeready-workspaces,compliance-operator,container-security-operator,elasticsearch-operator,file-integrity-operator,jaeger-product,kiali-ossm,kubevirt-hyperconverged,local-storage-operator,metering-ocp,nfd,ocs-operator,ptp-operator,rhsso-operator,serverless-operator,servicemeshoperator,sriov-network-operator"
 default_operator_registry_username: "{{ vault_default_operator_registry_username }}"
 default_operator_registry_password: "{{ vault_default_operator_registry_password }}"
 default_operator_registry: 'registry.redhat.io'
 bundle_file_name: 'operators-bundle.tar.xz'
-bundle_file_location: '/data/bundle/operators-bundle.tar.xz'
-dir_bundle_staging: "/tmp/bundles"
+bundle_file_location: '/data/bundle/openshift-bundle.tar.xz'
+dir_bundle_staging: "/data/staging"
 local_olm_repository: 'olm-mirror'
 source_operators_repository: 'redhat'
 source_operator_index: 'redhat-operator-index'
-source_operator_index_tag: 'v4.6'
+source_operator_index_tag: 'v4.7'
 
 ### RHEL Template variables  ###
 host_rhel_images: false
