@@ -20,6 +20,9 @@
   vars:
     module: "ovirt"
     instance_type: "cluster-resources"
+    template_type: "rhcos"
+    template_disk_size: "120"
+    create_rhcos_template: true
     state_provider: "local"
     tf_module_path: "{{ dir_terraform }}/{{ module }}/{{ instance_type }}"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }} | {{ instance_type }}"
