@@ -56,6 +56,8 @@
     # Had to add the following  ###################
     ## ausearch -c 'entrypoint.sh' --raw | audit2allow -M my-entrypointsh
     ## semodule -X 300 -i my-entrypointsh.pp
+    #### running `restorecon -R -v /var/lib/containers/` after
+    #### creating the drive might fix the issue
     ####################################################
 
     - name: '{{ ansible_name_module }} | import_role | registry'
