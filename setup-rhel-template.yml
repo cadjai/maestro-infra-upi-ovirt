@@ -3,6 +3,7 @@
   hosts: local
   gather_facts: no
   vars_files:
+    - vars/vault.yml
     - vars/global.yml
   tasks:
     - setup:

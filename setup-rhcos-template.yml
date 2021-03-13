@@ -1,7 +1,10 @@
 #!/usr/local/bin/ansible-playbook --inventory=inventory
 - name: ' Konductor | Provision UPI Infra | Gather instance facts'
-  hosts: local
+  hosts: localhost
   gather_facts: no
+  vars_files:
+    - vars/vault.yml
+    - vars/global.yml
   tasks:
     - setup:
 
