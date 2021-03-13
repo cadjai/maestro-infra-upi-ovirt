@@ -2,11 +2,10 @@
 - name: ' Konductor | Provision UPI Infra | bundle-ocp-images-for-artifactory.yml' 
   hosts: localhost 
   become: yes
-  vars:
-    ansible_python_interpreter: /usr/bin/python3
   vars_files:
     - 'vars/global.yml'
   vars:
+    ansible_python_interpreter: /usr/bin/python3
     module: "bundle-operators"
     ansible_name_module: " Konductor | Provision UPI Infra | {{ module }}"
     dir_bundle_location: "/data/bundle/artifactory"
