@@ -11,6 +11,10 @@
     include_masters: false
     include_workers: false
   tasks:
+    - name: '{{ ansible_name_module }} | set service name'
+      set_fact: 
+        haproxy_svc: "{{ 'container-haproxy.service' if use_containerized_nginx is defined and use_containerized_nginx| bool else 'haproxy' }}"
+
     - name: '{{ ansible_name_module }} | copy LB config template into place'
       template:
         src: "templates/loadbalancer/haproxy.cfg.j2"
@@ -21,7 +25,7 @@
 
     - name: '{{ ansible_name_module }} | Restart the HAProxy service'
       systemd:
-        name: haproxy
+        name: "{{ haproxy_svc }}" 
         state: restarted
         daemon_reload: yes
 
