@@ -13,7 +13,7 @@
 
 - import_playbook: provision-rhcos-template.yml     # Provision UPI infra nodes
   when:
-    - (create_template is defined and create_template | bool) or coreos_vm_template_id is not defined or (coreos_vm_template_id is defined and coreos_vm_template_id == '' )
+    - (create_rhcos_template is defined and create_rhcos_template | bool) or coreos_vm_template_id is not defined or (coreos_vm_template_id is defined and coreos_vm_template_id == '' )
 - import_playbook: setup-cluster-resources.yml   # Setup Terraform to provision UPI cluster resources
   vars:
     create_workers: true
