@@ -83,7 +83,7 @@
     
     - name: '{{ ansible_name_module }} | template | create infra static inventory'
       template:
-        src: "templates/inventory/instances-yaml.j2"
+        src: "templates/inventory/instances.yaml.j2"
         dest: "{{ inventory_dir }}/{{ instance_inventory_file }}"
         mode: '755'
       when:

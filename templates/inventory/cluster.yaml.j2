@@ -1,0 +1,30 @@
+all:
+  vars:
+    ansible_user: core
+    ansible_ssh_private_key_file: "{{ sshkeys_priv_file }}"
+    ansible_ssh_common_args: "{{ ansible_ssh_common_args }}"
+    
+  children:
+    bootstrap:
+      hosts:
+        {{ metadata_json_data.infraID }}-bootstrap:
+          ansible_host: {{ metadata_json_data.infraID }}-bootstrap
+          ansible_connection: local  
+{% if ocp_master_count | d('0') | int > 0 %}
+    masters:
+      hosts:
+{% for m in range(ocp_master_count) %}
+        {{ metadata_json_data.infraID }}-master{{ m }}:
+          ansible_host: {{ metadata_json_data.infraID }}-master{{ m }}
+          ansible_connection: local  
+{% endfor %}
+{% endif %}
+{% if create_workers | d(false) | bool and ocp_worker_count | d('0') | int > 0 %}
+    workers:
+      hosts:
+{% for w in range(ocp_worker_count) %}
+        {{ metadata_json_data.infraID }}-worker{{ w }}:
+          ansible_host: {{ metadata_json_data.infraID }}-worker{{ w }}
+          ansible_connection: local  
+{% endfor %}
+{% endif %}

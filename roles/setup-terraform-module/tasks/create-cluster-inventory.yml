@@ -4,7 +4,7 @@
 ####### Create static inventory file for the cluster
 - name: '{{ ansible_name_module }} | template | static inventory for cluster'
   template:
-    src: "templates/inventory/cluster.j2"
+    src: "templates/inventory/cluster.yaml.j2"
     dest: "{{ inventory_dir }}/{{ static_inventory_file }}"
     force: yes 
 
