@@ -20,6 +20,32 @@
         - configure_drive is defined
         - configure_drive | bool 
 
+
+    ###################### Add task to configure selinux on host #####
+    # Had to add the following  ###################
+    ## ausearch -c 'entrypoint.sh' --raw | audit2allow -M my-entrypointsh
+    ## semodule -X 300 -i my-entrypointsh.pp
+    #### running `restorecon -R -v /var/lib/containers/` after
+    #### creating the drive might fix the issue
+    ####################################################
+
+    - name: '{{ ansible_name_module }} | import_tasks | config-drives.yml'
+      when:
+        - configure_drive is defined
+        - configure_drive | bool 
+      block:
+        - name: '{{ ansible_name_module }} | shell | gather disks facts from host'
+          shell: lsblk | grep "/var/lib/containers" | awk '{print $7}' 
+          register: container_disks
+
+        - name: '{{ ansible_name_module }} | shell | apply restorecon '
+          shell: restorecon -R -v {{ container_disks.stdout }}
+          when:
+            - container_disks is defined 
+            - container_disks.rc == 0
+            - " '/var/lib/containers' in container_disks.stdout " 
+
+      
     - name: Load container registry image onto registy host if disconnected
       when:
         - disconnected is defined
@@ -51,14 +77,6 @@
         path: "{{ registry_ca_local_dir }}"
         state: directory
         mode: 0755
-
-    ###################### Add task to configure selinux on host #####
-    # Had to add the following  ###################
-    ## ausearch -c 'entrypoint.sh' --raw | audit2allow -M my-entrypointsh
-    ## semodule -X 300 -i my-entrypointsh.pp
-    #### running `restorecon -R -v /var/lib/containers/` after
-    #### creating the drive might fix the issue
-    ####################################################
 
     - name: '{{ ansible_name_module }} | import_role | registry'
       import_role:
