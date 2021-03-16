@@ -12,15 +12,15 @@
     ocp_clients:
       oc:
         pkg_prefix: "openshift-client-linux-"
-        version: "4.7.1"
+        version: "4.7.0"
         install: true
       oc_install:
         pkg_prefix: "openshift-install-linux-"
-        version: "4.7.1"
+        version: "4.7.0"
         install: true
       opm:
         pkg_prefix: "opm-linux-"
-        version: "4.7.1"
+        version: "4.7.0"
         install: true
       grpcurl:
         pkg_name: "grpcurl_1.8.0_linux_x86_64"
